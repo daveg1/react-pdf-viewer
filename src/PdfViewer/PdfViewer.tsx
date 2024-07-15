@@ -1,11 +1,11 @@
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
-import "./pdf-viewer.component.css";
+import "./PdfViewer.css";
 import { Document, Page, pdfjs } from "react-pdf";
 import { createContext, useMemo, useRef, useState } from "react";
-import { PdfViewerMenu } from "./pdf-viewer-menu.component";
+import { PdfViewerMenu } from "./components/PdfViewerMenu";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { PdfRenderer } from "./pdf-renderer.component";
+import { renderPdfText } from "./utils/render-pdf-text";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -27,7 +27,7 @@ export const PdfContext = createContext<{
 export function PdfViewer(props: { options: Record<string, string> }) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
-  const [pageScale, setPageScale] = useState(1);
+  const [pageScale] = useState(1);
 
   // Virtual scrolling
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -101,7 +101,7 @@ export function PdfViewer(props: { options: Record<string, string> }) {
                   scale={pageScale}
                   // onGetTextSuccess={(e) => console.log(item.index + 1, e)}
                   // customRenderer={PdfRenderer}
-                  customTextRenderer={PdfRenderer}
+                  customTextRenderer={renderPdfText}
                 />
               </div>
             ))}

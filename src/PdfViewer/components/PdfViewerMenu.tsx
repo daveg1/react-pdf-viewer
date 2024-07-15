@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { PdfContext } from "./pdf-viewer.component";
+import { PdfContext } from "../PdfViewer";
 
 export function PdfViewerMenu() {
   const { numPages, pageNumber, scrollToPage } = useContext(PdfContext);

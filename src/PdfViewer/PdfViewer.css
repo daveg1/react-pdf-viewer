@@ -2,6 +2,6 @@
 
 @layer components {
 	*::selection {
-		/* @apply text-transparent bg-sky-800/40; */
+		@apply text-transparent bg-sky-900/60;
 	}
 }

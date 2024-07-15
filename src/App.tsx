@@ -1,5 +1,5 @@
 import "./App.css";
-import { PdfViewer } from "./components";
+import { PdfViewer } from "./PdfViewer";
 
 function App() {
   return (

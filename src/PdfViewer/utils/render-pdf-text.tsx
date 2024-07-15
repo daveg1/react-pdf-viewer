@@ -11,6 +11,6 @@ interface Props {
   hasEOL: boolean;
 }
 
-export function PdfRenderer(props: Props) {
+export function renderPdfText(props: Props) {
   return props.str.trim();
 }
