@@ -4,7 +4,7 @@ import "./PdfViewer.css";
 import { Document, Page, pdfjs } from "react-pdf";
 import { createContext, useMemo, useRef, useState } from "react";
 import { PdfViewerMenu } from "./components/PdfViewerMenu";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer, Virtualizer } from "@tanstack/react-virtual";
 import { renderPdfText } from "./utils/render-pdf-text";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -13,7 +13,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 const MENU_HEIGHT = 40;
-const PADDING = 32;
+const SCROLL_PADDING = 32;
 const VIEWPORT_HEIGHT = window.innerHeight - MENU_HEIGHT;
 const PAGE_HEIGHT = window.outerHeight;
 // const options = { cMapUrl: "/cmaps/" };
@@ -22,26 +22,39 @@ export const PdfContext = createContext<{
   numPages: number;
   pageNumber: number;
   scrollToPage: (pageNumber: number) => void;
+  hasSelection: boolean;
 }>(null!);
 
 export function PdfViewer(props: { options: Record<string, string> }) {
+  /**
+   * Hooks and state
+   */
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [pageScale] = useState(1);
+  const [hasSelection, setHasSelection] = useState(false);
+
+  /**
+   * Refs
+   */
+  const DOMDocumentRef = useRef(document);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Virtual scrolling
-  const scrollRef = useRef<HTMLDivElement>(null);
   const virtualList = useVirtualizer({
     count: numPages,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => PAGE_HEIGHT * pageScale,
     gap: 16,
-    paddingStart: PADDING,
-    paddingEnd: PADDING,
-    overscan: 5,
-    scrollMargin: -16,
+    paddingStart: SCROLL_PADDING,
+    paddingEnd: SCROLL_PADDING,
     scrollPaddingStart: 16,
+    onChange: onVirtualScroll,
   });
+
+  /**
+   * Context values
+   */
 
   function scrollToPage(pageNumber: number) {
     setPageNumber(pageNumber);
@@ -50,7 +63,11 @@ export function PdfViewer(props: { options: Record<string, string> }) {
     });
   }
 
-  const contextValue = { numPages, pageNumber, scrollToPage };
+  const contextValue = { numPages, pageNumber, scrollToPage, hasSelection };
+
+  /**
+   * Event Listeners
+   */
 
   function onLoaded({ numPages }: { numPages: number }) {
     setNumPages(numPages);
@@ -59,6 +76,22 @@ export function PdfViewer(props: { options: Record<string, string> }) {
   function onItemClick({ pageNumber }: { pageNumber: number }) {
     scrollToPage(pageNumber);
   }
+
+  function onVirtualScroll(e: Virtualizer<HTMLDivElement, Element>) {
+    const offset = e.scrollOffset ?? 0;
+    const items = e.getVirtualItems();
+    const itemOnScreen = items.find(
+      (v) => offset + SCROLL_PADDING + PAGE_HEIGHT / 2 < v.start,
+    );
+
+    if (!itemOnScreen) return;
+    setPageNumber(itemOnScreen.index);
+  }
+
+  DOMDocumentRef.current.addEventListener("selectionchange", () => {
+    const sel = window.getSelection()?.toString().trim();
+    setHasSelection(!!sel);
+  });
 
   const options = useMemo(() => props.options, [props]);
 
