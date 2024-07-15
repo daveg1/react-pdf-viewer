@@ -43,11 +43,11 @@ export function PdfViewerMenu() {
         </svg>
       </button>
 
-      <span>
+      <span className="flex gap-1">
         Page
         <input
           type="text"
-          className="w-[5ch] bg-transparent text-center"
+          className="w-[4ch] rounded bg-transparent text-center outline-none focus:bg-black/25"
           value={pageNumber}
           min={1}
           max={numPages}
