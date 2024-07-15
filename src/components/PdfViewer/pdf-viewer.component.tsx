@@ -3,7 +3,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import { createContext, useRef, useState } from "react";
 import { PdfViewerMenu } from "./pdf-viewer-menu.component";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer, Virtualizer } from "@tanstack/react-virtual";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -20,19 +20,15 @@ export const PdfContext = createContext<{
   numPages: number;
   pageNumber: number;
   setPageNumber: React.Dispatch<React.SetStateAction<number>>;
+  virtualList: Virtualizer<HTMLDivElement, Element>;
 }>(null!);
 
 export function PdfViewer() {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
-  const contextValue = { numPages, pageNumber, setPageNumber };
-  // const iteratePages = Array.from({ length: numPages });
+
+  // Virtual scrolling
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  function onLoaded({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
-  }
-
   const virtualList = useVirtualizer({
     count: numPages,
     getScrollElement: () => scrollRef.current,
@@ -41,8 +37,15 @@ export function PdfViewer() {
     paddingStart: PADDING,
     paddingEnd: PADDING,
     overscan: 5,
-    scrollMargin: 0,
+    scrollMargin: -16,
+    scrollPaddingStart: 16,
   });
+
+  const contextValue = { numPages, pageNumber, setPageNumber, virtualList };
+
+  function onLoaded({ numPages }: { numPages: number }) {
+    setNumPages(numPages);
+  }
 
   return (
     <>
