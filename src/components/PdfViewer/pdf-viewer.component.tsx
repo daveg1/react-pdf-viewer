@@ -27,13 +27,14 @@ export const PdfContext = createContext<{
 export function PdfViewer(props: { options: Record<string, string> }) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
+  const [pageScale, setPageScale] = useState(1);
 
   // Virtual scrolling
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtualList = useVirtualizer({
     count: numPages,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => PAGE_HEIGHT,
+    estimateSize: () => PAGE_HEIGHT * pageScale,
     gap: 16,
     paddingStart: PADDING,
     paddingEnd: PADDING,
@@ -69,7 +70,7 @@ export function PdfViewer(props: { options: Record<string, string> }) {
 
       <Document
         options={options}
-        file="/sample.pdf"
+        file="/russian.pdf"
         className="bg-gray-400"
         onLoadSuccess={onLoaded}
         onItemClick={onItemClick}
@@ -97,6 +98,7 @@ export function PdfViewer(props: { options: Record<string, string> }) {
                   className="shadow-md"
                   height={item.size}
                   pageNumber={item.index + 1}
+                  scale={pageScale}
                   // onGetTextSuccess={(e) => console.log(item.index + 1, e)}
                   // customRenderer={PdfRenderer}
                   customTextRenderer={PdfRenderer}
