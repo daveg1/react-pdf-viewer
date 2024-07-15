@@ -1,0 +1,7 @@
+@tailwind components;
+
+@layer components {
+	*::selection {
+		/* @apply text-transparent bg-sky-800/40; */
+	}
+}

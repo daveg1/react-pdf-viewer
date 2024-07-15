@@ -4,7 +4,7 @@ import { PdfViewer } from "./components";
 function App() {
   return (
     <>
-      <PdfViewer />
+      <PdfViewer options={{ cMapUrl: "/cmaps/" }} />
     </>
   );
 }

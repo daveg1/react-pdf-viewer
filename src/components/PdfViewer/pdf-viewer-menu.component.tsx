@@ -2,33 +2,25 @@ import { useContext } from "react";
 import { PdfContext } from "./pdf-viewer.component";
 
 export function PdfViewerMenu() {
-  const { numPages, pageNumber, setPageNumber, virtualList } =
-    useContext(PdfContext);
+  const { numPages, pageNumber, scrollToPage } = useContext(PdfContext);
 
   const MIN_PAGE = 1;
   const MAX_PAGE = numPages;
 
   function pageBackward() {
-    setPageNumber((v) => {
-      const pageNum = Math.max(v - 1, MIN_PAGE);
-      virtualList.scrollToIndex(pageNum - 1, { align: "start" });
-      return pageNum;
-    });
+    const pageNum = Math.max(pageNumber - 1, MIN_PAGE);
+    scrollToPage(pageNum);
   }
 
   function pageForward() {
-    setPageNumber((v) => {
-      const pageNum = Math.min(v + 1, MAX_PAGE);
-      virtualList.scrollToIndex(pageNum - 1, { align: "start" });
-      return pageNum;
-    });
+    const pageNum = Math.min(pageNumber + 1, MAX_PAGE);
+    scrollToPage(pageNum);
   }
 
   function setPage(e: React.ChangeEvent<HTMLInputElement>) {
     const value = +e.target.value || 1;
     if (value > numPages) return;
-    virtualList.scrollToIndex(value - 1, { align: "start" });
-    setPageNumber(value);
+    scrollToPage(value);
   }
 
   return (
