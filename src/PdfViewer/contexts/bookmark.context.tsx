@@ -4,6 +4,7 @@ import React, { createContext, useState } from "react";
 interface Bookmark {
   transformHash: string;
   text: string;
+  pageIndex: number;
 }
 
 interface IBookmarkContext {

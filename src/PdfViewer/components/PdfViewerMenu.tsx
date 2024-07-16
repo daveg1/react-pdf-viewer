@@ -53,7 +53,11 @@ export function PdfViewerMenu() {
 
     setBookmarks((value) => [
       ...value,
-      { text: line.str, transformHash: generateHash(line.transform) },
+      {
+        text: selectedText,
+        transformHash: generateHash(line.transform),
+        pageIndex,
+      },
     ]);
   }
 

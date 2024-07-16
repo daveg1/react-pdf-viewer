@@ -45,7 +45,8 @@ function Layout(props: PdfViewerProps) {
     scrollToPage,
   } = useContext(PdfContext);
 
-  const { textLayerCache, setTextLayerCache } = useContext(BookmarkContext);
+  const { bookmarks, textLayerCache, setTextLayerCache } =
+    useContext(BookmarkContext);
 
   /**
    * Virtual scrolling
@@ -107,6 +108,22 @@ function Layout(props: PdfViewerProps) {
       <ScrollContext.Provider value={{ virtualList }}>
         <PdfViewerMenu />
       </ScrollContext.Provider>
+
+      {!!bookmarks && !!bookmarks.length && (
+        <div className="absolute left-12 top-16 z-50 h-[100px] w-[400px] rounded bg-zinc-200 p-4">
+          <h3 className="mb-1 text-lg font-medium leading-tight">Bookmarks</h3>
+
+          {bookmarks.map((bookmark) => (
+            <div
+              key={bookmark.transformHash}
+              className="cursor-pointer hover:underline"
+              onClick={() => scrollToPage(virtualList, bookmark.pageIndex + 1)}
+            >
+              [#{bookmark.pageIndex + 1}] {bookmark.text}
+            </div>
+          ))}
+        </div>
+      )}
 
       <Document
         file={props.file}
