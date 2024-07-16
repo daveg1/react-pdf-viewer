@@ -2,12 +2,15 @@ import { useContext } from "react";
 import { PdfContext } from "../contexts/pdf.context";
 import { BookmarkContext } from "../contexts/bookmark.context";
 import { ScrollContext } from "../PdfViewer";
+import { TextItem } from "pdfjs-dist/types/src/display/api";
+import { generateHash } from "../utils/generate-hash";
 
 export function PdfViewerMenu() {
   const { numPages, pageNumber, hasSelection, scrollToPage } =
     useContext(PdfContext);
 
-  const { bookmarks, setBookmarks } = useContext(BookmarkContext);
+  const { bookmarks, setBookmarks, textLayerCache } =
+    useContext(BookmarkContext);
   const { virtualList } = useContext(ScrollContext);
 
   const MIN_PAGE = 1;
@@ -43,6 +46,13 @@ export function PdfViewerMenu() {
       virtualList.getOffsetForIndex(pageIndex, "start")?.[0] ?? 0;
 
     const scrollOffset = +node.offsetTop + virtualOffset;
+    const textItem = textLayerCache[pageIndex].items.find(
+      (item) => (item as unknown as TextItem).str === node.textContent,
+    ) as TextItem;
+
+    const transformHash = generateHash(pageIndex, textItem.transform);
+
+    // TODO: get list of transformHashes for each node that the selection touches
 
     setBookmarks((value) => [
       ...value,
@@ -50,6 +60,7 @@ export function PdfViewerMenu() {
         selectedText,
         scrollOffset,
         pageIndex,
+        transformHash,
       },
     ]);
   }

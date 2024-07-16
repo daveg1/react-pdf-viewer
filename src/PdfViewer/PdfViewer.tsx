@@ -2,10 +2,10 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./PdfViewer.css";
 import { Document, Page, pdfjs } from "react-pdf";
-import { createContext, useContext, useMemo, useRef } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef } from "react";
 import { PdfViewerMenu } from "./components/PdfViewerMenu";
 import { useVirtualizer, Virtualizer } from "@tanstack/react-virtual";
-import { renderPdfText } from "./utils/render-pdf-text";
+import { renderPdfText, RenderProps } from "./utils/render-pdf-text";
 import {
   DocumentInitParameters,
   TextContent,
@@ -103,6 +103,14 @@ function Layout(props: PdfViewerProps) {
     }
   }
 
+  /**
+   * Text renderer
+   */
+  const textRenderer = useCallback(
+    (props: RenderProps) => renderPdfText(props, bookmarks),
+    [bookmarks],
+  );
+
   return (
     <>
       <ScrollContext.Provider value={{ virtualList }}>
@@ -113,9 +121,9 @@ function Layout(props: PdfViewerProps) {
         <div className="absolute left-12 top-16 z-50 w-[400px] rounded bg-zinc-200 p-4">
           <h3 className="mb-1 text-lg font-medium leading-tight">Bookmarks</h3>
 
-          {bookmarks.map((bookmark, index) => (
+          {bookmarks.map((bookmark) => (
             <div
-              key={index}
+              key={bookmark.transformHash}
               className="cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap hover:underline"
               onClick={() =>
                 scrollToPage(virtualList, { offset: bookmark.scrollOffset })
@@ -157,7 +165,7 @@ function Layout(props: PdfViewerProps) {
                   className="shadow-md"
                   height={item.size}
                   pageNumber={item.index + 1}
-                  customTextRenderer={renderPdfText}
+                  customTextRenderer={textRenderer}
                   onGetTextSuccess={(e) => onTextLayerLoaded(e, item.index)}
                 />
               </div>

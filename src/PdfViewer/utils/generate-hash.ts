@@ -1,3 +1,3 @@
-export function generateHash(numArray: number[]) {
-  return numArray.join("");
+export function generateHash(pageIndex: number, numArray: number[]) {
+  return `${pageIndex}${numArray.join("")}`;
 }
