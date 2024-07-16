@@ -116,7 +116,7 @@ function Layout(props: PdfViewerProps) {
           {bookmarks.map((bookmark) => (
             <div
               key={bookmark.transformHash}
-              className="cursor-pointer hover:underline"
+              className="cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap hover:underline"
               onClick={() => scrollToPage(virtualList, bookmark.pageIndex + 1)}
             >
               [#{bookmark.pageIndex + 1}] {bookmark.text}

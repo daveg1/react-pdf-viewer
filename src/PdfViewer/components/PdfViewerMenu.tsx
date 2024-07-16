@@ -45,11 +45,50 @@ export function PdfViewerMenu() {
     const pageIndex = pageNumber - 1;
     const textLayer = textLayerCache[pageIndex];
 
-    const line = textLayer.items.find((item: unknown) => {
-      return (item as TextItem).str.includes(selectedText);
-    }) as TextItem | undefined;
+    // Check if text exists in a single text node
+    let line: TextItem | undefined;
 
-    if (!line) return;
+    // TODO: move this to a util fn
+    for (let i = 0; i < textLayer.items.length; i++) {
+      const node = textLayer.items[i] as TextItem;
+
+      // Check if selected text exists solely within this node, if so happy days
+      if (node.str.includes(selectedText)) {
+        line = node;
+        break;
+      }
+
+      if (line) break;
+
+      // Otherwise, need to check if this node contains part of the selected text
+
+      // Firstly check overlap from start of text
+      for (let j = 0; j < node.str.length; j++) {
+        const segment = node.str.slice(j);
+
+        if (selectedText.includes(segment)) {
+          line = node;
+          break;
+        }
+      }
+
+      if (line) break;
+
+      // If not, then check overlap from end of text
+      for (let j = node.str.length; j > 0; j--) {
+        const segment = node.str.slice(0, j);
+
+        if (selectedText.includes(segment)) {
+          line = node;
+          break;
+        }
+      }
+    }
+
+    // TODO: better UX here than just returning without feedback...
+    if (!line) {
+      return;
+    }
 
     setBookmarks((value) => [
       ...value,
