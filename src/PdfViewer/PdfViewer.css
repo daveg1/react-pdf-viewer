@@ -1,3 +1,7 @@
 .textLayer *::selection {
 	@apply text-transparent bg-sky-900/60;
 }
+
+.textLayer mark {
+	@apply text-transparent bg-yellow-300/50;
+}

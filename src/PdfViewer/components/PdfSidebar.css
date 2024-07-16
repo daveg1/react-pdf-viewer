@@ -1,0 +1,20 @@
+.Sidebar {
+	transition-behavior: allow-discrete;
+	transition-property: transform, display;
+	transition-duration: 300ms;
+
+	&[rel="open"] {
+		display: block;
+		transition: translateX(0);
+	}
+
+	@starting-style {
+		display: none;
+		transform: translateX(-100%);
+	}
+
+	&[rel="closed"] {
+		display: none;
+		transform: translateX(-100%);
+	}
+}

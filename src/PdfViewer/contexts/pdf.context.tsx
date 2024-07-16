@@ -8,11 +8,14 @@ interface IPdfContext {
   setPageNumber: React.Dispatch<React.SetStateAction<number>>;
   hasSelection: boolean;
   setHasSelection: React.Dispatch<React.SetStateAction<boolean>>;
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
   scrollToPage: (
     virtualList: Virtualizer<HTMLDivElement, Element>,
     scrollOptions: {
       pageNumber?: number;
       offset?: number;
+      scrollBehaviour?: "smooth" | "auto";
     },
   ) => void;
 }
@@ -27,24 +30,30 @@ export function PdfContextProvider({
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [hasSelection, setHasSelection] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const scrollToPage: IPdfContext["scrollToPage"] = (
     virtualList: Virtualizer<HTMLDivElement, Element>,
-    scrollOptions: {
+    options: {
       pageNumber?: number;
       offset?: number;
+      scrollBehaviour?: "smooth" | "auto";
     },
   ) => {
-    if (scrollOptions.pageNumber) {
-      setPageNumber(scrollOptions.pageNumber);
-      virtualList.scrollToIndex(scrollOptions.pageNumber - 1, {
+    if (options.pageNumber) {
+      setPageNumber(options.pageNumber);
+      virtualList.scrollToIndex(options.pageNumber - 1, {
         align: "start",
+        behavior: options.scrollBehaviour,
       });
       return;
     }
 
-    if (scrollOptions.offset) {
-      virtualList.scrollToOffset(scrollOptions.offset);
+    if (options.offset) {
+      virtualList.scrollToOffset(options.offset, {
+        align: "start",
+        behavior: options.scrollBehaviour,
+      });
       return;
     }
   };
@@ -56,6 +65,8 @@ export function PdfContextProvider({
     setPageNumber,
     hasSelection,
     setHasSelection,
+    isSidebarOpen,
+    setIsSidebarOpen,
     scrollToPage,
   };
 

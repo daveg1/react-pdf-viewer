@@ -14,7 +14,7 @@ import {
   BookmarkContext,
   BookmarkContextProvider,
 } from "./contexts/bookmark.context";
-import { PdfBookmarks } from "./components/PdfBookmarks";
+import { PdfSidebar } from "./components/PdfSidebar";
 import {
   ScrollContext,
   ScrollContextProvider,
@@ -83,19 +83,20 @@ function Layout(props: PdfViewerProps) {
     <>
       <PdfViewerMenu />
 
-      {!!bookmarks && !!bookmarks.length && <PdfBookmarks />}
-
       <Document
         file={props.file}
         options={options}
-        className="bg-gray-400"
+        className="flex justify-center bg-gray-400"
         onLoadSuccess={onLoaded}
         onItemClick={onItemClick}
+        loading={null}
         // inputRef={scrollRef} // <--- experiment with this
       >
+        <PdfSidebar />
+
         <div
           ref={scrollRef}
-          className="overflow-auto"
+          className="w-full overflow-auto"
           style={{ height: `${VIEWPORT_HEIGHT}px` }}
         >
           <div

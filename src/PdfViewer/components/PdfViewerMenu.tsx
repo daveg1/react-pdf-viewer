@@ -6,7 +6,7 @@ import { TextItem } from "pdfjs-dist/types/src/display/api";
 import { generateHash } from "../utils/generate-hash";
 
 export function PdfViewerMenu() {
-  const { numPages, pageNumber, hasSelection, scrollToPage } =
+  const { numPages, pageNumber, hasSelection, setIsSidebarOpen, scrollToPage } =
     useContext(PdfContext);
 
   const { bookmarks, setBookmarks, textLayerCache } =
@@ -63,13 +63,22 @@ export function PdfViewerMenu() {
         transformHash,
       },
     ]);
+
+    setIsSidebarOpen(true);
+  }
+
+  function onSidebarButtonClick() {
+    setIsSidebarOpen((v) => !v);
   }
 
   return (
     <div className="sticky inset-x-0 top-0 z-50 flex h-10 items-center bg-zinc-700 px-2 text-white shadow-lg">
       {/* Left section */}
       <div className="flex items-center gap-2">
-        <button className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25">
+        <button
+          className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25"
+          onClick={onSidebarButtonClick}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
