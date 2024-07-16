@@ -1,31 +1,60 @@
 import { useContext } from "react";
-import { PdfContext } from "../PdfViewer";
+import { PdfContext } from "../contexts/pdf.context";
+import { BookmarkContext } from "../contexts/bookmark.context";
+import { ScrollContext } from "../PdfViewer";
+import { generateHash } from "../utils/generate-hash";
+
+interface TextItem {
+  dir: string;
+  fontName: string;
+  hasEOL: true;
+  height: number;
+  str: string;
+  transform: [number, number, number, number, number, number];
+  width: number;
+}
 
 export function PdfViewerMenu() {
-  const { numPages, pageNumber, scrollToPage, hasSelection } =
+  const { numPages, pageNumber, hasSelection, scrollToPage } =
     useContext(PdfContext);
+
+  const { setBookmarks, textLayerCache } = useContext(BookmarkContext);
+  const { virtualList } = useContext(ScrollContext);
 
   const MIN_PAGE = 1;
   const MAX_PAGE = numPages;
 
   function pageBackward() {
     const pageNum = Math.max(pageNumber - 1, MIN_PAGE);
-    scrollToPage(pageNum);
+    scrollToPage(virtualList, pageNum);
   }
 
   function pageForward() {
     const pageNum = Math.min(pageNumber + 1, MAX_PAGE);
-    scrollToPage(pageNum);
+    scrollToPage(virtualList, pageNum);
   }
 
   function setPage(e: React.ChangeEvent<HTMLInputElement>) {
     const value = +e.target.value || 1;
     if (value > numPages) return;
-    scrollToPage(value);
+    scrollToPage(virtualList, value);
   }
 
-  function bookmarkText() {
-    console.log(window.getSelection()?.toString());
+  async function bookmarkText() {
+    const selectedText = window.getSelection()!.toString();
+    const pageIndex = pageNumber - 1;
+    const textLayer = textLayerCache[pageIndex];
+
+    const line = textLayer.items.find((item: unknown) => {
+      return (item as TextItem).str.includes(selectedText);
+    }) as TextItem | undefined;
+
+    if (!line) return;
+
+    setBookmarks((value) => [
+      ...value,
+      { text: line.str, transformHash: generateHash(line.transform) },
+    ]);
   }
 
   return (

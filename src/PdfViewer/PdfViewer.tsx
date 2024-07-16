@@ -2,10 +2,19 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./PdfViewer.css";
 import { Document, Page, pdfjs } from "react-pdf";
-import { createContext, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useMemo, useRef } from "react";
 import { PdfViewerMenu } from "./components/PdfViewerMenu";
 import { useVirtualizer, Virtualizer } from "@tanstack/react-virtual";
 import { renderPdfText } from "./utils/render-pdf-text";
+import {
+  DocumentInitParameters,
+  TextContent,
+} from "pdfjs-dist/types/src/display/api";
+import { PdfContext, PdfContextProvider } from "./contexts/pdf.context";
+import {
+  BookmarkContext,
+  BookmarkContextProvider,
+} from "./contexts/bookmark.context";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -16,66 +25,43 @@ const MENU_HEIGHT = 40;
 const SCROLL_PADDING = 32;
 const VIEWPORT_HEIGHT = window.innerHeight - MENU_HEIGHT;
 const PAGE_HEIGHT = window.outerHeight;
-// const options = { cMapUrl: "/cmaps/" };
 
-export const PdfContext = createContext<{
-  numPages: number;
-  pageNumber: number;
-  scrollToPage: (pageNumber: number) => void;
-  hasSelection: boolean;
+export const ScrollContext = createContext<{
+  virtualList: Virtualizer<HTMLDivElement, Element>;
 }>(null!);
 
-export function PdfViewer(props: { options: Record<string, string> }) {
-  /**
-   * Hooks and state
-   */
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
-  const [pageScale] = useState(1);
-  const [hasSelection, setHasSelection] = useState(false);
+interface PdfViewerProps {
+  file: string;
+  options: DocumentInitParameters;
+}
+
+function Layout(props: PdfViewerProps) {
+  const options = useMemo(() => props.options, [props]);
+  const {
+    numPages,
+    setNumPages,
+    setPageNumber,
+    setHasSelection,
+    scrollToPage,
+  } = useContext(PdfContext);
+
+  const { textLayerCache, setTextLayerCache } = useContext(BookmarkContext);
 
   /**
-   * Refs
+   * Virtual scrolling
    */
-  const DOMDocumentRef = useRef(document);
+
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Virtual scrolling
   const virtualList = useVirtualizer({
     count: numPages,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => PAGE_HEIGHT * pageScale,
+    estimateSize: () => PAGE_HEIGHT,
     gap: 16,
     paddingStart: SCROLL_PADDING,
     paddingEnd: SCROLL_PADDING,
     scrollPaddingStart: 16,
     onChange: onVirtualScroll,
   });
-
-  /**
-   * Context values
-   */
-
-  function scrollToPage(pageNumber: number) {
-    setPageNumber(pageNumber);
-    virtualList.scrollToIndex(pageNumber - 1, {
-      align: "start",
-    });
-  }
-
-  const contextValue = { numPages, pageNumber, scrollToPage, hasSelection };
-
-  /**
-   * Event Listeners
-   */
-
-  function onLoaded({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
-  }
-
-  function onItemClick({ pageNumber }: { pageNumber: number }) {
-    scrollToPage(pageNumber);
-  }
 
   function onVirtualScroll(e: Virtualizer<HTMLDivElement, Element>) {
     const offset = e.scrollOffset ?? 0;
@@ -88,22 +74,43 @@ export function PdfViewer(props: { options: Record<string, string> }) {
     setPageNumber(itemOnScreen.index);
   }
 
+  /**
+   * Selection detection
+   */
+
+  const DOMDocumentRef = useRef(document);
   DOMDocumentRef.current.addEventListener("selectionchange", () => {
     const sel = window.getSelection()?.toString().trim();
     setHasSelection(!!sel);
   });
 
-  const options = useMemo(() => props.options, [props]);
+  /**
+   * Event Listeners
+   */
+
+  function onLoaded({ numPages }: { numPages: number }) {
+    setNumPages(numPages);
+  }
+
+  function onItemClick({ pageNumber }: { pageNumber: number }) {
+    scrollToPage(virtualList, pageNumber);
+  }
+
+  function onTextLayerLoaded(textLayer: TextContent, pageIndex: number) {
+    if (!(pageIndex in textLayerCache)) {
+      setTextLayerCache((cache) => ({ ...cache, [pageIndex]: textLayer }));
+    }
+  }
 
   return (
     <>
-      <PdfContext.Provider value={contextValue}>
+      <ScrollContext.Provider value={{ virtualList }}>
         <PdfViewerMenu />
-      </PdfContext.Provider>
+      </ScrollContext.Provider>
 
       <Document
+        file={props.file}
         options={options}
-        file="/russian.pdf"
         className="bg-gray-400"
         onLoadSuccess={onLoaded}
         onItemClick={onItemClick}
@@ -131,10 +138,8 @@ export function PdfViewer(props: { options: Record<string, string> }) {
                   className="shadow-md"
                   height={item.size}
                   pageNumber={item.index + 1}
-                  scale={pageScale}
-                  // onGetTextSuccess={(e) => console.log(item.index + 1, e)}
-                  // customRenderer={PdfRenderer}
                   customTextRenderer={renderPdfText}
+                  onGetTextSuccess={(e) => onTextLayerLoaded(e, item.index)}
                 />
               </div>
             ))}
@@ -142,5 +147,15 @@ export function PdfViewer(props: { options: Record<string, string> }) {
         </div>
       </Document>
     </>
+  );
+}
+
+export function PdfViewer({ file, options }: PdfViewerProps) {
+  return (
+    <PdfContextProvider>
+      <BookmarkContextProvider>
+        <Layout file={file} options={options} />
+      </BookmarkContextProvider>
+    </PdfContextProvider>
   );
 }
