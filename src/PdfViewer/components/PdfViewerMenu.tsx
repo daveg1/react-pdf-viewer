@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { PdfContext } from "../contexts/pdf.context";
 import { BookmarkContext } from "../contexts/bookmark.context";
-import { ScrollContext } from "../PdfViewer";
+import { ScrollContext } from "../contexts/virtual-scroll.context";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
 import { generateHash } from "../utils/generate-hash";
 
@@ -66,10 +66,29 @@ export function PdfViewerMenu() {
   }
 
   return (
-    <div className="sticky inset-x-0 top-0 z-50 grid grid-cols-3 items-center justify-center gap-4 bg-zinc-700 py-2 text-white shadow-lg">
-      <div className="flex justify-end">
+    <div className="sticky inset-x-0 top-0 z-50 flex h-10 items-center bg-zinc-700 px-2 text-white shadow-lg">
+      {/* Left section */}
+      <div className="flex items-center gap-2">
+        <button className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="size-5"
+          >
+            <path
+              fillRule="evenodd"
+              d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75ZM2 10a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Zm0 5.25a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span className="pointer-events-none absolute -bottom-8 left-0 w-max rounded bg-zinc-800 px-2 opacity-0 transition-opacity group-hover:opacity-100">
+            Sidebar
+          </span>
+        </button>
+
         <button
-          className="group relative flex items-center justify-center gap-1 rounded-sm p-1 hover:bg-white/10 active:bg-white/25 disabled:pointer-events-none disabled:bg-transparent disabled:opacity-50"
+          className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded p-1 hover:bg-white/10 active:bg-white/25 disabled:pointer-events-none disabled:bg-transparent disabled:opacity-50"
           disabled={!hasSelection}
           onClick={bookmarkText}
         >
@@ -79,7 +98,7 @@ export function PdfViewerMenu() {
             viewBox="0 0 24 24"
             strokeWidth={2.5}
             stroke="currentColor"
-            className="size-4"
+            className="size-6"
           >
             <path
               strokeLinecap="round"
@@ -88,15 +107,16 @@ export function PdfViewerMenu() {
             />
           </svg>
 
-          <span className="pointer-events-none absolute -bottom-8 w-max rounded bg-zinc-800 px-2 opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="pointer-events-none absolute -bottom-8 -left-8 w-max rounded bg-zinc-800 px-2 opacity-0 transition-opacity group-hover:opacity-100">
             Bookmark selected text
           </span>
         </button>
       </div>
 
-      <div className="flex items-center justify-center gap-4">
+      {/* Middle section */}
+      <div className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center gap-4">
         <button
-          className="grid w-6 place-items-center rounded-sm bg-white/10 hover:bg-white/25"
+          className="grid h-7 w-7 place-items-center rounded bg-white/10 hover:bg-white/25"
           onClick={pageBackward}
         >
           <svg
@@ -113,11 +133,11 @@ export function PdfViewerMenu() {
           </svg>
         </button>
 
-        <span className="flex gap-1">
+        <span className="flex items-baseline gap-1">
           Page
           <input
             type="text"
-            className="w-[4ch] rounded bg-transparent text-center outline-none focus:bg-black/25"
+            className="w-[5ch] rounded border border-zinc-500 bg-transparent px-1 text-end outline-none focus:bg-black/25"
             value={pageNumber}
             min={1}
             max={numPages}
@@ -127,7 +147,7 @@ export function PdfViewerMenu() {
         </span>
 
         <button
-          className="grid w-6 place-items-center rounded-sm bg-white/10 hover:bg-white/25"
+          className="grid h-7 w-7 place-items-center rounded bg-white/10 hover:bg-white/25"
           onClick={pageForward}
         >
           <svg
