@@ -1,9 +1,16 @@
 import { TextContent } from "pdfjs-dist/types/src/display/api";
 import React, { createContext, useState } from "react";
 
+// interface Bookmark {
+//   transform: number[];
+//   transformHash: string;
+//   text: string;
+//   pageIndex: number;
+// }
+
 interface Bookmark {
-  transformHash: string;
-  text: string;
+  selectedText: string;
+  scrollOffset: number;
   pageIndex: number;
 }
 

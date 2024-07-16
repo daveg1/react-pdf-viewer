@@ -94,7 +94,7 @@ function Layout(props: PdfViewerProps) {
   }
 
   function onItemClick({ pageNumber }: { pageNumber: number }) {
-    scrollToPage(virtualList, pageNumber);
+    scrollToPage(virtualList, { pageNumber });
   }
 
   function onTextLayerLoaded(textLayer: TextContent, pageIndex: number) {
@@ -110,16 +110,18 @@ function Layout(props: PdfViewerProps) {
       </ScrollContext.Provider>
 
       {!!bookmarks && !!bookmarks.length && (
-        <div className="absolute left-12 top-16 z-50 h-[100px] w-[400px] rounded bg-zinc-200 p-4">
+        <div className="absolute left-12 top-16 z-50 w-[400px] rounded bg-zinc-200 p-4">
           <h3 className="mb-1 text-lg font-medium leading-tight">Bookmarks</h3>
 
-          {bookmarks.map((bookmark) => (
+          {bookmarks.map((bookmark, index) => (
             <div
-              key={bookmark.transformHash}
+              key={index}
               className="cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap hover:underline"
-              onClick={() => scrollToPage(virtualList, bookmark.pageIndex + 1)}
+              onClick={() =>
+                scrollToPage(virtualList, { offset: bookmark.scrollOffset })
+              }
             >
-              [#{bookmark.pageIndex + 1}] {bookmark.text}
+              [#{bookmark.pageIndex + 1}] {bookmark.selectedText}
             </div>
           ))}
         </div>

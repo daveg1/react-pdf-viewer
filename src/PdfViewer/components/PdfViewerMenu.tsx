@@ -2,23 +2,12 @@ import { useContext } from "react";
 import { PdfContext } from "../contexts/pdf.context";
 import { BookmarkContext } from "../contexts/bookmark.context";
 import { ScrollContext } from "../PdfViewer";
-import { generateHash } from "../utils/generate-hash";
-
-interface TextItem {
-  dir: string;
-  fontName: string;
-  hasEOL: true;
-  height: number;
-  str: string;
-  transform: [number, number, number, number, number, number];
-  width: number;
-}
 
 export function PdfViewerMenu() {
   const { numPages, pageNumber, hasSelection, scrollToPage } =
     useContext(PdfContext);
 
-  const { setBookmarks, textLayerCache } = useContext(BookmarkContext);
+  const { bookmarks, setBookmarks } = useContext(BookmarkContext);
   const { virtualList } = useContext(ScrollContext);
 
   const MIN_PAGE = 1;
@@ -26,75 +15,40 @@ export function PdfViewerMenu() {
 
   function pageBackward() {
     const pageNum = Math.max(pageNumber - 1, MIN_PAGE);
-    scrollToPage(virtualList, pageNum);
+    scrollToPage(virtualList, { pageNumber: pageNum });
   }
 
   function pageForward() {
     const pageNum = Math.min(pageNumber + 1, MAX_PAGE);
-    scrollToPage(virtualList, pageNum);
+    scrollToPage(virtualList, { pageNumber: pageNum });
   }
 
   function setPage(e: React.ChangeEvent<HTMLInputElement>) {
     const value = +e.target.value || 1;
     if (value > numPages) return;
-    scrollToPage(virtualList, value);
+    scrollToPage(virtualList, { pageNumber: value });
   }
 
   async function bookmarkText() {
-    const selectedText = window.getSelection()!.toString();
-    const pageIndex = pageNumber - 1;
-    const textLayer = textLayerCache[pageIndex];
+    const selection = window.getSelection()!;
+    const selectedText = selection.toString();
 
-    // Check if text exists in a single text node
-    let line: TextItem | undefined;
+    // Avoid duplicates
+    if (bookmarks.find((book) => book.selectedText === selectedText)) return;
 
-    // TODO: move this to a util fn
-    for (let i = 0; i < textLayer.items.length; i++) {
-      const node = textLayer.items[i] as TextItem;
+    const node = selection.anchorNode!.parentElement!;
+    const pageIndex =
+      +(node.parentElement?.parentElement?.dataset["pageNumber"] ?? 1) - 1;
+    const virtualOffset =
+      virtualList.getOffsetForIndex(pageIndex, "start")?.[0] ?? 0;
 
-      // Check if selected text exists solely within this node, if so happy days
-      if (node.str.includes(selectedText)) {
-        line = node;
-        break;
-      }
-
-      if (line) break;
-
-      // Otherwise, need to check if this node contains part of the selected text
-
-      // Firstly check overlap from start of text
-      for (let j = 0; j < node.str.length; j++) {
-        const segment = node.str.slice(j);
-
-        if (selectedText.includes(segment)) {
-          line = node;
-          break;
-        }
-      }
-
-      if (line) break;
-
-      // If not, then check overlap from end of text
-      for (let j = node.str.length; j > 0; j--) {
-        const segment = node.str.slice(0, j);
-
-        if (selectedText.includes(segment)) {
-          line = node;
-          break;
-        }
-      }
-    }
-
-    // TODO: better UX here than just returning without feedback...
-    if (!line) {
-      return;
-    }
+    const scrollOffset = +node.offsetTop + virtualOffset;
 
     setBookmarks((value) => [
       ...value,
       {
-        text: selectedText,
-        transformHash: generateHash(line.transform),
+        selectedText,
+        scrollOffset,
         pageIndex,
       },
     ]);

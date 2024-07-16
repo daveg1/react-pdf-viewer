@@ -10,7 +10,10 @@ interface IPdfContext {
   setHasSelection: React.Dispatch<React.SetStateAction<boolean>>;
   scrollToPage: (
     virtualList: Virtualizer<HTMLDivElement, Element>,
-    pageNumber: number,
+    scrollOptions: {
+      pageNumber?: number;
+      offset?: number;
+    },
   ) => void;
 }
 
@@ -25,15 +28,26 @@ export function PdfContextProvider({
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [hasSelection, setHasSelection] = useState(false);
 
-  function scrollToPage(
+  const scrollToPage: IPdfContext["scrollToPage"] = (
     virtualList: Virtualizer<HTMLDivElement, Element>,
-    pageNumber: number,
-  ) {
-    setPageNumber(pageNumber);
-    virtualList.scrollToIndex(pageNumber - 1, {
-      align: "start",
-    });
-  }
+    scrollOptions: {
+      pageNumber?: number;
+      offset?: number;
+    },
+  ) => {
+    if (scrollOptions.pageNumber) {
+      setPageNumber(scrollOptions.pageNumber);
+      virtualList.scrollToIndex(scrollOptions.pageNumber - 1, {
+        align: "start",
+      });
+      return;
+    }
+
+    if (scrollOptions.offset) {
+      virtualList.scrollToOffset(scrollOptions.offset);
+      return;
+    }
+  };
 
   const value = {
     numPages,
