@@ -1,3 +1,15 @@
+.textLayer {
+	@apply select-none;
+
+	& :is(span) {
+		/**
+		 * Increase height of items in text layer to make it less likely to encounter awkward text selection behaviour
+		 * Such as highlighting the entire page or PDF
+		 */
+		@apply select-text h-[5lh];
+	}
+}
+
 .textLayer *::selection {
 	@apply text-transparent bg-sky-900/60;
 }
