@@ -1,7 +1,18 @@
 import { TextContent } from "pdfjs-dist/types/src/display/api";
 import React, { createContext, useState } from "react";
 
+export interface TransformHash {
+  hash: string;
+  startOffset?: number;
+  endOffset?: number;
+}
+
 export interface Bookmark {
+  /**
+   * Random UUID
+   */
+  key: string;
+
   /**
    * The selection text the bookmark is created on.
    */
@@ -20,7 +31,7 @@ export interface Bookmark {
   /**
    * Used by the textLayerReneder to determine which text nodes to highlight
    */
-  transformHash: string;
+  transformHashes: TransformHash[];
 }
 
 interface IBookmarkContext {

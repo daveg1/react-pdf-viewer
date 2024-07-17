@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { PdfContext } from "../contexts/pdf.context";
-import { BookmarkContext } from "../contexts/bookmark.context";
+import { BookmarkContext, TransformHash } from "../contexts/bookmark.context";
 import { ScrollContext } from "../contexts/virtual-scroll.context";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
 import { generateHash } from "../utils/generate-hash";
@@ -35,32 +35,54 @@ export function PdfViewerMenu() {
   async function bookmarkText() {
     const selection = window.getSelection()!;
     const selectedText = selection.toString();
+    const startNode = selection.anchorNode!.parentElement!;
+    const endNode = selection.focusNode!.parentElement!;
+    const pageIndex =
+      +(startNode.parentElement?.parentElement?.dataset["pageNumber"] ?? 1) - 1;
 
     // Avoid duplicates
-    if (bookmarks.find((book) => book.selectedText === selectedText)) return;
+    const bookmarkExists = bookmarks.some(
+      (book) =>
+        book.selectedText === selectedText && book.pageIndex === pageIndex,
+    );
 
-    const node = selection.anchorNode!.parentElement!;
-    const pageIndex =
-      +(node.parentElement?.parentElement?.dataset["pageNumber"] ?? 1) - 1;
+    if (bookmarkExists) return;
+
+    // scroll offsets
     const virtualOffset =
       virtualList.getOffsetForIndex(pageIndex, "start")?.[0] ?? 0;
+    const scrollOffset = +startNode.offsetTop + virtualOffset;
 
-    const scrollOffset = +node.offsetTop + virtualOffset;
-    const textItem = textLayerCache[pageIndex].items.find(
-      (item) => (item as unknown as TextItem).str === node.textContent,
-    ) as TextItem;
+    // selection nodes
+    const cachedItems = textLayerCache[pageIndex].items as TextItem[];
+    const startIndex = cachedItems.findIndex(
+      (item) => item.str === startNode.textContent,
+    );
+    const endIndex =
+      startNode === endNode
+        ? startIndex
+        : cachedItems.findIndex((item) => item.str === endNode.textContent);
 
-    const transformHash = generateHash(pageIndex, textItem.transform);
-
-    // TODO: get list of transformHashes for each node that the selection touches
+    // list of all nodes between and including the start and end nodes
+    const transformHashes: TransformHash[] = cachedItems
+      .slice(startIndex, endIndex + 1)
+      .map((item, index, array) => {
+        return {
+          hash: generateHash(pageIndex, item.transform),
+          startOffset: index === 0 ? selection.anchorOffset : undefined,
+          endOffset:
+            index === array.length - 1 ? selection.focusOffset : undefined,
+        };
+      });
 
     setBookmarks((value) => [
       ...value,
       {
+        key: crypto.randomUUID(),
         selectedText,
         scrollOffset,
         pageIndex,
-        transformHash,
+        transformHashes,
       },
     ]);
 
