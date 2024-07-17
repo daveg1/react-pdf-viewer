@@ -12,6 +12,9 @@ export function PdfSidebar() {
   const { virtualList } = useContext(ScrollContext);
 
   // TODO: group bookmarks by pageIndex and indent them
+  // TODO: allow removing bookmarks
+  // TODO: only isolate bookmarks when on a page with multiple highlights (or maybe change style to show outline?)
+  // TODO: increase scrollPadding for bookmarks
 
   /**
    * Make it easier to see which bookmark we're hovering over
@@ -52,7 +55,7 @@ export function PdfSidebar() {
       {bookmarks.map((bookmark) => (
         <div
           key={bookmark.key}
-          className="w-[calc(380px_-_2rem)] cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap rounded-sm p-2 hover:bg-black/10"
+          className="w-[calc(380px_-_2rem)] cursor-pointer select-none overflow-hidden text-ellipsis whitespace-nowrap rounded-sm p-2 hover:bg-black/10"
           onClick={() =>
             scrollToPage(virtualList, { offset: bookmark.scrollOffset })
           }

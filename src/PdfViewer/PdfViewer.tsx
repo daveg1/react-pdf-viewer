@@ -41,18 +41,21 @@ function Layout(props: PdfViewerProps) {
     useContext(BookmarkContext);
 
   /**
-   * Virtual scrolling
-   */
-
-  /**
    * Selection detection
    */
 
   const DOMDocumentRef = useRef(document);
   DOMDocumentRef.current.addEventListener("selectionchange", () => {
-    const sel = window.getSelection()?.toString().trim();
-    // TODO FIXME: only set to true when selection resides within pdf document textlayer
-    setHasSelection(!!sel);
+    const sel = window.getSelection();
+    const startNode = sel?.anchorNode?.parentElement?.parentElement;
+    const endNode = sel?.focusNode?.parentElement?.parentElement;
+    const isInsideTextLayer =
+      !!startNode?.classList?.contains("textLayer") &&
+      !!endNode?.classList.contains("textLayer");
+
+    const hasSel = isInsideTextLayer && !!sel?.toString().trim();
+
+    setHasSelection(hasSel);
   });
 
   /**
@@ -130,13 +133,13 @@ function Layout(props: PdfViewerProps) {
   );
 }
 
-export function PdfViewer({ file, options }: PdfViewerProps) {
+export function PdfViewer(props: PdfViewerProps) {
   return (
     <PdfContextProvider>
       <LayoutContextProvider>
         <ScrollContextProvider>
           <BookmarkContextProvider>
-            <Layout file={file} options={options} />
+            <Layout {...props} />
           </BookmarkContextProvider>
         </ScrollContextProvider>
       </LayoutContextProvider>
