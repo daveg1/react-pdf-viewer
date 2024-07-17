@@ -1,36 +1,35 @@
 import { useContext } from "react";
 import { PdfContext } from "../contexts/pdf.context";
 import { BookmarkContext, TransformHash } from "../contexts/bookmark.context";
-import { ScrollContext } from "../contexts/virtual-scroll.context";
+import { ScrollContext } from "../contexts/scroll.context";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
 import { generateHash } from "../utils/generate-hash";
 import { LayoutContext } from "../contexts/layout.context";
 
 export function PdfViewerMenu() {
-  const { numPages, pageNumber, hasSelection, scrollToPage } =
-    useContext(PdfContext);
+  const { numPages, pageNumber, hasSelection } = useContext(PdfContext);
   const { setIsSidebarOpen } = useContext(LayoutContext);
   const { bookmarks, setBookmarks, textLayerCache } =
     useContext(BookmarkContext);
-  const { virtualList } = useContext(ScrollContext);
+  const { virtualList, scrollToPage } = useContext(ScrollContext);
 
   const MIN_PAGE = 1;
   const MAX_PAGE = numPages;
 
   function pageBackward() {
     const pageNum = Math.max(pageNumber - 1, MIN_PAGE);
-    scrollToPage(virtualList, { pageNumber: pageNum });
+    scrollToPage({ pageNumber: pageNum });
   }
 
   function pageForward() {
     const pageNum = Math.min(pageNumber + 1, MAX_PAGE);
-    scrollToPage(virtualList, { pageNumber: pageNum });
+    scrollToPage({ pageNumber: pageNum });
   }
 
   function setPage(e: React.ChangeEvent<HTMLInputElement>) {
     const value = +e.target.value || 1;
     if (value > numPages) return;
-    scrollToPage(virtualList, { pageNumber: value });
+    scrollToPage({ pageNumber: value });
   }
 
   async function bookmarkText() {

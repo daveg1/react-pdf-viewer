@@ -1,15 +1,13 @@
 import "./PdfSidebar.css";
 import { useContext } from "react";
 import { Bookmark, BookmarkContext } from "../contexts/bookmark.context";
-import { ScrollContext } from "../contexts/virtual-scroll.context";
-import { PdfContext } from "../contexts/pdf.context";
+import { ScrollContext } from "../contexts/scroll.context";
 import { LayoutContext } from "../contexts/layout.context";
 
 export function PdfSidebar() {
-  const { scrollToPage } = useContext(PdfContext);
   const { isSidebarOpen } = useContext(LayoutContext);
   const { bookmarks, setBookmarks } = useContext(BookmarkContext);
-  const { virtualList } = useContext(ScrollContext);
+  const { scrollToPage } = useContext(ScrollContext);
 
   /**
    * Make it easier to see which bookmark we're hovering over
@@ -72,7 +70,10 @@ export function PdfSidebar() {
               <h3
                 className="group flex cursor-pointer items-center gap-1 rounded-sm px-1 hover:bg-black/10"
                 onClick={() =>
-                  scrollToPage(virtualList, { pageNumber: +pageIndex + 1 })
+                  scrollToPage({
+                    pageNumber: +pageIndex + 1,
+                    scrollBehaviour: "smooth",
+                  })
                 }
               >
                 <span>Page {+pageIndex + 1}</span>
@@ -118,9 +119,7 @@ export function PdfSidebar() {
                   <span
                     className="-my-1 -mr-2 w-full max-w-sm overflow-hidden text-ellipsis whitespace-nowrap py-1 pr-2"
                     onClick={() =>
-                      scrollToPage(virtualList, {
-                        offset: bookmark.scrollOffset,
-                      })
+                      scrollToPage({ offset: bookmark.scrollOffset })
                     }
                   >
                     {bookmark.selectedText}

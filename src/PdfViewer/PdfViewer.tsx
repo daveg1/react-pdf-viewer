@@ -18,8 +18,8 @@ import { PdfSidebar } from "./components/PdfSidebar";
 import {
   ScrollContext,
   ScrollContextProvider,
-} from "./contexts/virtual-scroll.context";
-import { VIEWPORT_HEIGHT } from "./constants/pdf.constants";
+} from "./contexts/scroll.context";
+import { PAGE_HEIGHT, VIEWPORT_HEIGHT } from "./constants/pdf.constants";
 import { LayoutContextProvider } from "./contexts/layout.context";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -35,8 +35,8 @@ interface PdfViewerProps {
 function Layout(props: PdfViewerProps) {
   const options = useMemo(() => props.options, [props]);
 
-  const { setNumPages, setHasSelection, scrollToPage } = useContext(PdfContext);
-  const { scrollRef, virtualList } = useContext(ScrollContext);
+  const { setNumPages, setHasSelection } = useContext(PdfContext);
+  const { scrollRef, virtualList, scrollToPage } = useContext(ScrollContext);
   const { bookmarks, textLayerCache, setTextLayerCache } =
     useContext(BookmarkContext);
 
@@ -67,7 +67,7 @@ function Layout(props: PdfViewerProps) {
   }
 
   function onItemClick({ pageNumber }: { pageNumber: number }) {
-    scrollToPage(virtualList, { pageNumber });
+    scrollToPage({ pageNumber });
   }
 
   function onTextLayerLoaded(textLayer: TextContent, pageIndex: number) {
@@ -121,6 +121,12 @@ function Layout(props: PdfViewerProps) {
                   className="shadow-md"
                   height={item.size}
                   pageNumber={item.index + 1}
+                  loading={
+                    <div
+                      className="opacity-50"
+                      style={{ height: `${PAGE_HEIGHT}px` }}
+                    ></div>
+                  }
                   customTextRenderer={textRenderer}
                   onGetTextSuccess={(e) => onTextLayerLoaded(e, item.index)}
                 />
