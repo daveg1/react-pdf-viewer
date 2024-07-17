@@ -33,6 +33,7 @@ export function ScrollContextProvider({
 }) {
   const { numPages, pageNumber, setPageNumber } = useContext(PdfContext);
 
+  const ignoreScrollEvents = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // TODO: set initial offset based on localStorage state
@@ -48,6 +49,8 @@ export function ScrollContextProvider({
   });
 
   function onVirtualScroll(e: Virtualizer<HTMLDivElement, Element>) {
+    if (ignoreScrollEvents.current) return;
+
     const offset = e.scrollOffset ?? 0;
     const items = e.getVirtualItems();
     const itemOnScreen = items.find(
@@ -98,7 +101,6 @@ export function ScrollContextProvider({
       const direction = Math.sign(distance);
 
       if (Math.abs(distance) > PAGE_OFFSET) {
-        console.log(pageNumber - 1, pageNumber - 1 - 1 * direction);
         virtualList.scrollToIndex(pageNumber - 1 - 1 * direction, {
           behavior: "smooth",
         });
@@ -119,7 +121,7 @@ export function ScrollContextProvider({
    * @param options
    */
   const scrollToPage = async (options: ScrollOptions) => {
-    // TODO: ignore scroll events while this function is running
+    ignoreScrollEvents.current = true;
 
     /**
      * When smooth scrolling, if distance is greater than threshold, pre scroll so it doesn't have to travel over hundreds of pages
@@ -129,17 +131,21 @@ export function ScrollContextProvider({
     }
 
     if (options.pageNumber) {
-      setPageNumber(options.pageNumber);
       virtualList.scrollToIndex(options.pageNumber - 1, {
         align: "start",
         behavior: options.scrollBehaviour,
       });
+
+      await pause(500);
+      setPageNumber(options.pageNumber);
     } else if (options.offset) {
       virtualList.scrollToOffset(options.offset, {
         align: "start",
         behavior: options.scrollBehaviour,
       });
     }
+
+    ignoreScrollEvents.current = false;
   };
 
   const value: ScrollContext = { scrollRef, virtualList, scrollToPage };
