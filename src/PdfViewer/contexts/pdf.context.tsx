@@ -12,11 +12,13 @@ interface PdfContext {
   setHasSelection: React.Dispatch<React.SetStateAction<boolean>>;
   isLoaded: boolean;
   setIsLoaded: React.Dispatch<React.SetStateAction<boolean>>;
+  fingerprint: string;
+  setFingerprint: React.Dispatch<React.SetStateAction<string>>;
 }
 
 type PdfSerial = Omit<PdfContext, `set${string}` | "hasSelection" | "isLoaded">;
 
-const LOCAL_STORAGE_KEY = "davepdf_pdf";
+const LOCAL_STORAGE_KEY = "davepdf_pdfs";
 
 export const PdfContext = createContext<PdfContext>(null!);
 const localState = deserialise<PdfSerial>(LOCAL_STORAGE_KEY);
@@ -35,14 +37,16 @@ export function PdfContextProvider({
   );
   const [hasSelection, setHasSelection] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false); // purely to trigger ui update
+  const [fingerprint, setFingerprint] = useState("");
 
   useEffect(() => {
     serialise<PdfSerial>(LOCAL_STORAGE_KEY, {
       numPages,
       pageNumber,
       scrollOffset,
+      fingerprint,
     });
-  }, [numPages, pageNumber, scrollOffset]);
+  }, [numPages, pageNumber, scrollOffset, fingerprint]);
 
   const value: PdfContext = {
     numPages,
@@ -55,6 +59,8 @@ export function PdfContextProvider({
     setHasSelection,
     isLoaded,
     setIsLoaded,
+    fingerprint,
+    setFingerprint,
   };
 
   return <PdfContext.Provider value={value}>{children}</PdfContext.Provider>;

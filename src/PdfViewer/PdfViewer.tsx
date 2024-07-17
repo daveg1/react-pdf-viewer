@@ -22,6 +22,7 @@ import {
 } from "./contexts/scroll.context";
 import { PAGE_HEIGHT, VIEWPORT_HEIGHT } from "./constants/pdf.constants";
 import { LayoutContextProvider } from "./contexts/layout.context";
+import { FileContext, FileContextProvider } from "./contexts/file.context";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -29,14 +30,15 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 interface PdfViewerProps {
-  file: string;
   options: DocumentInitParameters;
 }
 
 function Layout(props: PdfViewerProps) {
   const options = useMemo(() => props.options, [props]);
 
-  const { setNumPages, setHasSelection, setIsLoaded } = useContext(PdfContext);
+  const { file } = useContext(FileContext);
+  const { setNumPages, setHasSelection, setIsLoaded, setFingerprint } =
+    useContext(PdfContext);
   const { scrollRef, virtualList, scrollToPage } = useContext(ScrollContext);
   const { bookmarks, textLayerCache, setTextLayerCache } =
     useContext(BookmarkContext);
@@ -63,9 +65,10 @@ function Layout(props: PdfViewerProps) {
    * Event Listeners
    */
 
-  function onLoaded(e: PDFDocumentProxy) {
+  async function onLoaded(e: PDFDocumentProxy) {
     setNumPages(e.numPages);
     setIsLoaded(true);
+    setFingerprint(e.fingerprints[0]);
   }
 
   function onItemClick({ pageNumber }: { pageNumber: number }) {
@@ -91,7 +94,7 @@ function Layout(props: PdfViewerProps) {
       <PdfViewerMenu />
 
       <Document
-        file={props.file}
+        file={file}
         options={options}
         className="flex justify-center bg-gray-400"
         onLoadSuccess={onLoaded}
@@ -143,14 +146,16 @@ function Layout(props: PdfViewerProps) {
 
 export function PdfViewer(props: PdfViewerProps) {
   return (
-    <PdfContextProvider>
-      <LayoutContextProvider>
-        <ScrollContextProvider>
-          <BookmarkContextProvider>
-            <Layout {...props} />
-          </BookmarkContextProvider>
-        </ScrollContextProvider>
-      </LayoutContextProvider>
-    </PdfContextProvider>
+    <FileContextProvider>
+      <PdfContextProvider>
+        <LayoutContextProvider>
+          <ScrollContextProvider>
+            <BookmarkContextProvider>
+              <Layout {...props} />
+            </BookmarkContextProvider>
+          </ScrollContextProvider>
+        </LayoutContextProvider>
+      </PdfContextProvider>
+    </FileContextProvider>
   );
 }
