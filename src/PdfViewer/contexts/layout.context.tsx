@@ -1,4 +1,5 @@
-import React, { createContext, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
+import { deserialise, serialise } from "../utils/local-storage";
 
 interface LayoutContext {
   isSidebarOpen: boolean;
@@ -16,22 +17,12 @@ export function LayoutContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const localData = deserialise();
-  const [isSidebarOpen, _setIsSidebarOpen] = useState(localData.isSidebarOpen);
+  const localData = deserialise<LayoutSerial>(LOCAL_STORAGE_KEY);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(localData.isSidebarOpen);
 
-  // TODO: add generic way to serialise/deserialise
-  function setIsSidebarOpen(value: boolean | ((v: boolean) => boolean)) {
-    let newValue: boolean;
-
-    if (typeof value === "function") {
-      newValue = value(isSidebarOpen);
-    } else {
-      newValue = value;
-    }
-
-    serialise({ isSidebarOpen: newValue });
-    _setIsSidebarOpen(newValue);
-  }
+  useEffect(() => {
+    serialise<LayoutSerial>(LOCAL_STORAGE_KEY, { isSidebarOpen });
+  }, [isSidebarOpen]);
 
   const value = {
     isSidebarOpen,
@@ -41,14 +32,4 @@ export function LayoutContextProvider({
   return (
     <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>
   );
-}
-
-function serialise(data: LayoutSerial) {
-  const serial = JSON.stringify(data);
-  window.localStorage.setItem(LOCAL_STORAGE_KEY, serial);
-}
-
-function deserialise(): LayoutSerial {
-  const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-  return JSON.parse(raw ?? "{}") as LayoutSerial;
 }

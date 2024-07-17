@@ -36,7 +36,7 @@ export interface Bookmark {
   transformHashes: TransformHash[];
 }
 
-interface IBookmarkContext {
+interface BookmarkContext {
   bookmarks: Bookmark[];
   setBookmarks: React.Dispatch<React.SetStateAction<Bookmark[]>>;
   textLayerCache: Record<number, TextContent>;
@@ -45,7 +45,7 @@ interface IBookmarkContext {
   >;
 }
 
-export const BookmarkContext = createContext<IBookmarkContext>(null!);
+export const BookmarkContext = createContext<BookmarkContext>(null!);
 
 export function BookmarkContextProvider({
   children,

@@ -6,7 +6,6 @@ import {
   PAGE_HEIGHT,
   SCROLL_PADDING,
 } from "../constants/pdf.constants";
-import { pause } from "../utils/pause";
 
 interface ScrollContext {
   scrollRef: React.LegacyRef<HTMLDivElement> | undefined;
@@ -31,7 +30,8 @@ export function ScrollContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { numPages, pageNumber, setPageNumber } = useContext(PdfContext);
+  const { numPages, pageNumber, setPageNumber, scrollOffset, setScrollOffset } =
+    useContext(PdfContext);
 
   const ignoreScrollEvents = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -45,6 +45,7 @@ export function ScrollContextProvider({
     paddingStart: SCROLL_PADDING,
     paddingEnd: SCROLL_PADDING,
     scrollPaddingStart: 16,
+    initialOffset: scrollOffset,
     onChange: onVirtualScroll,
   });
 
@@ -59,22 +60,21 @@ export function ScrollContextProvider({
 
     if (!itemOnScreen) return;
     setPageNumber(itemOnScreen.index);
+
+    if (!e.isScrolling) {
+      setScrollOffset(virtualList.scrollOffset!);
+    }
   }
 
   /**
-   * Pre-scrolls to target to try create a better UX
+   * Pre-scrolls to target to try create a better UX.
    *
-   * Algorithm:
-   * 1. begin smooth-scrolling to 1 page away from current page
-   * 2. after timeout, snap to offset before target page
-   * 3. begin smooth-scrolling to target
-   *
+   * Snaps to offset before target pageNumber or offset then smooth scrolls to target.
    * @param options
    */
   async function preScroll(options: ScrollOptions) {
     const PAGE_OFFSET = 5; // if within 5 pages, just scroll to it normally
-    const TARGET_OFFSET = 2;
-    const SCROLL_DELAY_MS = 250;
+    const TARGET_OFFSET = 1;
 
     if (options.offset) {
       const PAGE_SIZE = PAGE_HEIGHT + PAGE_GAP;
@@ -83,13 +83,6 @@ export function ScrollContextProvider({
       const threshold = PAGE_SIZE * PAGE_OFFSET;
 
       if (Math.abs(distance) > threshold) {
-        virtualList.scrollToOffset(
-          virtualList.scrollOffset! + PAGE_SIZE * direction,
-          { behavior: "smooth" },
-        );
-
-        await pause(SCROLL_DELAY_MS);
-
         virtualList.scrollToOffset(
           options.offset + PAGE_SIZE * TARGET_OFFSET * direction,
         );
@@ -101,12 +94,6 @@ export function ScrollContextProvider({
       const direction = Math.sign(distance);
 
       if (Math.abs(distance) > PAGE_OFFSET) {
-        virtualList.scrollToIndex(pageNumber - 1 - 1 * direction, {
-          behavior: "smooth",
-        });
-
-        await pause(SCROLL_DELAY_MS);
-
         virtualList.scrollToIndex(
           options.pageNumber - 1 + TARGET_OFFSET * direction,
         );
@@ -135,8 +122,6 @@ export function ScrollContextProvider({
         align: "start",
         behavior: options.scrollBehaviour,
       });
-
-      await pause(500);
       setPageNumber(options.pageNumber);
     } else if (options.offset) {
       virtualList.scrollToOffset(options.offset, {
