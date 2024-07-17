@@ -50,9 +50,10 @@ export function PdfViewerMenu() {
     if (bookmarkExists) return;
 
     // scroll offsets
+    const SCROLL_PADDING = 32;
     const virtualOffset =
       virtualList.getOffsetForIndex(pageIndex, "start")?.[0] ?? 0;
-    const scrollOffset = +startNode.offsetTop + virtualOffset;
+    const scrollOffset = +startNode.offsetTop + virtualOffset - SCROLL_PADDING;
 
     // selection nodes
     const cachedItems = textLayerCache[pageIndex].items as TextItem[];

@@ -16,6 +16,8 @@ export function ScrollContextProvider({
   const { numPages, setPageNumber } = useContext(PdfContext);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // TODO: set initial offset based on localStorage state
   const virtualList = useVirtualizer({
     count: numPages,
     getScrollElement: () => scrollRef.current,

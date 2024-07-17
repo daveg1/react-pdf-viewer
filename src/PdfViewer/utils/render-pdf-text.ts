@@ -8,6 +8,9 @@ export type RenderProps = {
   itemIndex: number;
 } & TextItem;
 
+const markStyles =
+  "cursor-pointer text-transparent bg-yellow-300/50 rounded-sm hover:ring-2 hover:ring-black hover:bg-blue-300/50 ";
+
 export function renderPdfText(props: RenderProps, bookmarks: Bookmark[]) {
   const hash = generateHash(props.pageIndex, props.transform);
   let bookmark: Bookmark | undefined;
@@ -32,7 +35,7 @@ export function renderPdfText(props: RenderProps, bookmarks: Bookmark[]) {
     const markedSegment = text.slice(startOffset, endOffset);
     const endSegment = text.slice(endOffset);
 
-    return `${startSegment}<mark id="${bookmark?.key}" class="text-transparent bg-yellow-300/50">${markedSegment}</mark>${endSegment}`;
+    return `${startSegment}<mark id="${bookmark?.key}" class="${markStyles}">${markedSegment}</mark>${endSegment}`;
   }
 
   return text;

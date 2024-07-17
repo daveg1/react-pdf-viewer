@@ -29,6 +29,7 @@ export function PdfContextProvider({
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [hasSelection, setHasSelection] = useState(false);
 
+  // TODO: move scrollToPage to ScrollContext
   const scrollToPage: IPdfContext["scrollToPage"] = (
     virtualList: Virtualizer<HTMLDivElement, Element>,
     options: {
@@ -37,6 +38,9 @@ export function PdfContextProvider({
       scrollBehaviour?: "smooth" | "auto";
     },
   ) => {
+    // TODO: if smooth behaviour, auto scroll to 1-2 pages behind, then smooth scroll to target page.
+    // this creates a better UX experience, since you don't have to scroll past hundreds of pages
+
     if (options.pageNumber) {
       setPageNumber(options.pageNumber);
       virtualList.scrollToIndex(options.pageNumber - 1, {
