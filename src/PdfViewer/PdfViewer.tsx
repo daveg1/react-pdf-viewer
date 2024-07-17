@@ -7,6 +7,7 @@ import { PdfViewerMenu } from "./components/PdfViewerMenu";
 import { renderPdfText, RenderProps } from "./utils/render-pdf-text";
 import {
   DocumentInitParameters,
+  PDFDocumentProxy,
   TextContent,
 } from "pdfjs-dist/types/src/display/api";
 import { PdfContext, PdfContextProvider } from "./contexts/pdf.context";
@@ -35,7 +36,7 @@ interface PdfViewerProps {
 function Layout(props: PdfViewerProps) {
   const options = useMemo(() => props.options, [props]);
 
-  const { setNumPages, setHasSelection } = useContext(PdfContext);
+  const { setNumPages, setHasSelection, setIsLoaded } = useContext(PdfContext);
   const { scrollRef, virtualList, scrollToPage } = useContext(ScrollContext);
   const { bookmarks, textLayerCache, setTextLayerCache } =
     useContext(BookmarkContext);
@@ -62,8 +63,9 @@ function Layout(props: PdfViewerProps) {
    * Event Listeners
    */
 
-  function onLoaded({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
+  function onLoaded(e: PDFDocumentProxy) {
+    setNumPages(e.numPages);
+    setIsLoaded(true);
   }
 
   function onItemClick({ pageNumber }: { pageNumber: number }) {
