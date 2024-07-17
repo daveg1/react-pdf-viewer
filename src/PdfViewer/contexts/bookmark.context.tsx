@@ -1,6 +1,8 @@
 import { TextContent } from "pdfjs-dist/types/src/display/api";
 import React, { createContext, useState } from "react";
 
+const LOCAL_STORAGE_KEY = "davepdf_bookmarks";
+
 export interface TransformHash {
   hash: string;
   startOffset?: number;
@@ -50,10 +52,26 @@ export function BookmarkContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [bookmarks, _setBookmarks] = useState<Bookmark[]>(deserialise());
   const [textLayerCache, setTextLayerCache] = useState<
     Record<number, TextContent>
   >({});
+
+  // Proxy to serialise the bookmarks whenever they'red changed
+  function setBookmarks(
+    value: Bookmark[] | ((prev: Bookmark[]) => Bookmark[]),
+  ) {
+    let newBookmarks: Bookmark[];
+
+    if (Array.isArray(value)) {
+      newBookmarks = value;
+    } else {
+      newBookmarks = value(bookmarks);
+    }
+
+    serialise(newBookmarks);
+    _setBookmarks(newBookmarks);
+  }
 
   const value = { bookmarks, setBookmarks, textLayerCache, setTextLayerCache };
 
@@ -62,4 +80,14 @@ export function BookmarkContextProvider({
       {children}
     </BookmarkContext.Provider>
   );
+}
+
+function serialise(bookmarks: Bookmark[]) {
+  const serial = JSON.stringify(bookmarks);
+  window.localStorage.setItem(LOCAL_STORAGE_KEY, serial);
+}
+
+function deserialise() {
+  const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+  return JSON.parse(raw ?? "[]") as Bookmark[];
 }
