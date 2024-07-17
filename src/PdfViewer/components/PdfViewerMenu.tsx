@@ -4,11 +4,12 @@ import { BookmarkContext, TransformHash } from "../contexts/bookmark.context";
 import { ScrollContext } from "../contexts/virtual-scroll.context";
 import { TextItem } from "pdfjs-dist/types/src/display/api";
 import { generateHash } from "../utils/generate-hash";
+import { LayoutContext } from "../contexts/layout.context";
 
 export function PdfViewerMenu() {
-  const { numPages, pageNumber, hasSelection, setIsSidebarOpen, scrollToPage } =
+  const { numPages, pageNumber, hasSelection, scrollToPage } =
     useContext(PdfContext);
-
+  const { setIsSidebarOpen } = useContext(LayoutContext);
   const { bookmarks, setBookmarks, textLayerCache } =
     useContext(BookmarkContext);
   const { virtualList } = useContext(ScrollContext);

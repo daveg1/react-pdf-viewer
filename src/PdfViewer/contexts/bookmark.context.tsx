@@ -63,10 +63,10 @@ export function BookmarkContextProvider({
   ) {
     let newBookmarks: Bookmark[];
 
-    if (Array.isArray(value)) {
-      newBookmarks = value;
-    } else {
+    if (typeof value === "function") {
       newBookmarks = value(bookmarks);
+    } else {
+      newBookmarks = value;
     }
 
     serialise(newBookmarks);

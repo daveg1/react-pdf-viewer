@@ -20,6 +20,7 @@ import {
   ScrollContextProvider,
 } from "./contexts/virtual-scroll.context";
 import { VIEWPORT_HEIGHT } from "./constants/pdf.constants";
+import { LayoutContextProvider } from "./contexts/layout.context";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -50,6 +51,7 @@ function Layout(props: PdfViewerProps) {
   const DOMDocumentRef = useRef(document);
   DOMDocumentRef.current.addEventListener("selectionchange", () => {
     const sel = window.getSelection()?.toString().trim();
+    // TODO FIXME: only set to true when selection resides within pdf document textlayer
     setHasSelection(!!sel);
   });
 
@@ -131,11 +133,13 @@ function Layout(props: PdfViewerProps) {
 export function PdfViewer({ file, options }: PdfViewerProps) {
   return (
     <PdfContextProvider>
-      <ScrollContextProvider>
-        <BookmarkContextProvider>
-          <Layout file={file} options={options} />
-        </BookmarkContextProvider>
-      </ScrollContextProvider>
+      <LayoutContextProvider>
+        <ScrollContextProvider>
+          <BookmarkContextProvider>
+            <Layout file={file} options={options} />
+          </BookmarkContextProvider>
+        </ScrollContextProvider>
+      </LayoutContextProvider>
     </PdfContextProvider>
   );
 }

@@ -3,9 +3,11 @@ import { useContext } from "react";
 import { BookmarkContext } from "../contexts/bookmark.context";
 import { ScrollContext } from "../contexts/virtual-scroll.context";
 import { PdfContext } from "../contexts/pdf.context";
+import { LayoutContext } from "../contexts/layout.context";
 
 export function PdfSidebar() {
-  const { isSidebarOpen, scrollToPage } = useContext(PdfContext);
+  const { scrollToPage } = useContext(PdfContext);
+  const { isSidebarOpen } = useContext(LayoutContext);
   const { bookmarks } = useContext(BookmarkContext);
   const { virtualList } = useContext(ScrollContext);
 

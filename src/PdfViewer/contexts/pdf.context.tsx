@@ -8,8 +8,6 @@ interface IPdfContext {
   setPageNumber: React.Dispatch<React.SetStateAction<number>>;
   hasSelection: boolean;
   setHasSelection: React.Dispatch<React.SetStateAction<boolean>>;
-  isSidebarOpen: boolean;
-  setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
   scrollToPage: (
     virtualList: Virtualizer<HTMLDivElement, Element>,
     scrollOptions: {
@@ -30,7 +28,6 @@ export function PdfContextProvider({
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [hasSelection, setHasSelection] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const scrollToPage: IPdfContext["scrollToPage"] = (
     virtualList: Virtualizer<HTMLDivElement, Element>,
@@ -58,15 +55,13 @@ export function PdfContextProvider({
     }
   };
 
-  const value = {
+  const value: IPdfContext = {
     numPages,
     setNumPages,
     pageNumber,
     setPageNumber,
     hasSelection,
     setHasSelection,
-    isSidebarOpen,
-    setIsSidebarOpen,
     scrollToPage,
   };
 
