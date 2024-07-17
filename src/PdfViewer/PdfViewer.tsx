@@ -37,7 +37,7 @@ function Layout(props: PdfViewerProps) {
   const options = useMemo(() => props.options, [props]);
 
   const { file } = useContext(FileContext);
-  const { setPdfProperties, setHasSelection, setIsLoaded } =
+  const { setHasSelection, setIsLoaded, getInitialPdfState } =
     useContext(PdfContext);
   const { scrollRef, virtualList, scrollToPage } = useContext(ScrollContext);
   const { bookmarks, textLayerCache, setTextLayerCache } =
@@ -65,13 +65,11 @@ function Layout(props: PdfViewerProps) {
    * Event Listeners
    */
 
-  async function onLoaded(e: PDFDocumentProxy) {
-    setPdfProperties((value) => ({
-      ...value,
-      numPages: e.numPages,
-      fingerprint: e.fingerprints[0],
-    }));
+  async function onLoaded(doc: PDFDocumentProxy) {
     setIsLoaded(true);
+
+    const state = getInitialPdfState(doc);
+    virtualList.scrollOffset = state.scrollOffset;
   }
 
   function onItemClick({ pageNumber }: { pageNumber: number }) {
