@@ -8,7 +8,7 @@ import { LayoutContext } from "../contexts/layout.context";
 import { FileContext } from "../contexts/file.context";
 
 export function PdfViewerMenu() {
-  const { numPages, pageNumber, hasSelection } = useContext(PdfContext);
+  const { pdfProperties, hasSelection } = useContext(PdfContext);
   const { virtualList, scrollToPage } = useContext(ScrollContext);
   const { setIsSidebarOpen } = useContext(LayoutContext);
   const { bookmarks, setBookmarks, textLayerCache } =
@@ -18,21 +18,21 @@ export function PdfViewerMenu() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const MIN_PAGE = 1;
-  const MAX_PAGE = numPages;
+  const MAX_PAGE = pdfProperties.numPages;
 
   function pageBackward() {
-    const pageNum = Math.max(pageNumber - 1, MIN_PAGE);
+    const pageNum = Math.max(pdfProperties.pageNumber - 1, MIN_PAGE);
     scrollToPage({ pageNumber: pageNum });
   }
 
   function pageForward() {
-    const pageNum = Math.min(pageNumber + 1, MAX_PAGE);
+    const pageNum = Math.min(pdfProperties.pageNumber + 1, MAX_PAGE);
     scrollToPage({ pageNumber: pageNum });
   }
 
   function setPage(e: React.ChangeEvent<HTMLInputElement>) {
     const value = +e.target.value || 1;
-    if (value > numPages) return;
+    if (value > pdfProperties.numPages) return;
     scrollToPage({ pageNumber: value });
   }
 
@@ -221,12 +221,12 @@ export function PdfViewerMenu() {
           <input
             type="text"
             className="w-[5ch] rounded border border-zinc-500 bg-transparent px-1 text-end outline-none focus:bg-black/25"
-            value={pageNumber}
+            value={pdfProperties.pageNumber}
             min={1}
-            max={numPages}
+            max={pdfProperties.numPages}
             onChange={setPage}
           />
-          of {numPages}
+          of {pdfProperties.numPages}
         </span>
 
         <button

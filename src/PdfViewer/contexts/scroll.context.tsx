@@ -30,21 +30,20 @@ export function ScrollContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { numPages, pageNumber, setPageNumber, scrollOffset, setScrollOffset } =
-    useContext(PdfContext);
+  const { pdfProperties, setPdfProperties } = useContext(PdfContext);
 
   const ignoreScrollEvents = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const virtualList = useVirtualizer({
-    count: numPages,
+    count: pdfProperties.numPages,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => PAGE_HEIGHT,
     gap: PAGE_GAP,
     paddingStart: SCROLL_PADDING,
     paddingEnd: SCROLL_PADDING,
     scrollPaddingStart: 16,
-    initialOffset: scrollOffset,
+    initialOffset: pdfProperties.scrollOffset,
     onChange: onVirtualScroll,
   });
 
@@ -58,11 +57,12 @@ export function ScrollContextProvider({
     );
 
     if (!itemOnScreen) return;
-    setPageNumber(itemOnScreen.index);
 
-    if (!e.isScrolling) {
-      setScrollOffset(virtualList.scrollOffset!);
-    }
+    setPdfProperties((value) => ({
+      ...value,
+      pageNumber: itemOnScreen.index,
+      scrollOffset: virtualList.scrollOffset!,
+    }));
   }
 
   /**
@@ -89,7 +89,7 @@ export function ScrollContextProvider({
     }
 
     if (options.pageNumber) {
-      const distance = pageNumber - options.pageNumber;
+      const distance = pdfProperties.pageNumber - options.pageNumber;
       const direction = Math.sign(distance);
 
       if (Math.abs(distance) > PAGE_OFFSET) {
@@ -121,7 +121,11 @@ export function ScrollContextProvider({
         align: "start",
         behavior: options.scrollBehaviour,
       });
-      setPageNumber(options.pageNumber);
+
+      setPdfProperties((value) => ({
+        ...value,
+        pageNumber: options.pageNumber ?? 0,
+      }));
     } else if (options.offset) {
       virtualList.scrollToOffset(options.offset, {
         align: "start",
