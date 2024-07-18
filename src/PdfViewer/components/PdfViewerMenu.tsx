@@ -6,7 +6,6 @@ import { TextItem } from "pdfjs-dist/types/src/display/api";
 import { generateHash } from "../utils/generate-hash";
 import { LayoutContext } from "../contexts/layout.context";
 import { FileContext } from "../contexts/file.context";
-import { findTextLayer } from "../utils/find-text-layer";
 
 export function PdfViewerMenu() {
   const { pdfProperties, hasSelection } = useContext(PdfContext);
@@ -37,20 +36,31 @@ export function PdfViewerMenu() {
     scrollToPage({ pageNumber: value });
   }
 
+  function getTextItemsInRange(range: Range, pageIndex: number) {
+    const startNode = range.startContainer.parentElement!;
+    const endNode = range.endContainer.parentElement!;
+
+    const cachedItems = textLayerCache[pageIndex].items as TextItem[];
+    const startIndex = cachedItems.findIndex(
+      (item) => item.str === startNode.textContent,
+    );
+    const endIndex =
+      startNode === endNode
+        ? startIndex
+        : cachedItems.findIndex((item) => item.str === endNode.textContent);
+
+    return cachedItems.slice(startIndex, endIndex + 1);
+  }
+
   async function bookmarkText() {
     const selection = window.getSelection()!;
+    const range = selection.getRangeAt(0);
+
     const selectedText = selection.toString();
+    const startNode = range.startContainer.parentElement!;
 
-    const startNode = selection.anchorNode!.parentElement!;
-    const endNode = selection.focusNode!.parentElement!;
-
-    const textLayer = findTextLayer(startNode);
-    const pageIndex =
-      +(
-        textLayer.dataset["pageNumber"] ??
-        textLayer.parentElement?.dataset?.["pageNumber"] ?? // if PDF has marked content, pageNumber is on parentElement
-        1
-      ) - 1;
+    const pageContainer = startNode.closest(".react-pdf__Page") as HTMLElement;
+    const pageIndex = +(pageContainer.dataset["pageNumber"] ?? 1) - 1;
 
     // Avoid duplicates
     const bookmarkExists = bookmarks.some(
@@ -66,27 +76,17 @@ export function PdfViewerMenu() {
       virtualList.getOffsetForIndex(pageIndex, "start")?.[0] ?? 0;
     const scrollOffset = +startNode.offsetTop + virtualOffset - SCROLL_PADDING;
 
-    // selection nodes
-    const cachedItems = textLayerCache[pageIndex].items as TextItem[];
-    const startIndex = cachedItems.findIndex(
-      (item) => item.str === startNode.textContent,
-    );
-    const endIndex =
-      startNode === endNode
-        ? startIndex
-        : cachedItems.findIndex((item) => item.str === endNode.textContent);
+    // selected text layer items
+    const textItems = getTextItemsInRange(range, pageIndex);
 
     // list of all nodes between and including the start and end nodes
-    const transformHashes: TransformHash[] = cachedItems
-      .slice(startIndex, endIndex + 1)
-      .map((item, index, array) => {
-        return {
-          hash: generateHash(pageIndex, item.transform),
-          startOffset: index === 0 ? selection.anchorOffset : undefined,
-          endOffset:
-            index === array.length - 1 ? selection.focusOffset : undefined,
-        };
-      });
+    const transformHashes: TransformHash[] = textItems.map(
+      (item, index, array) => ({
+        hash: generateHash(pageIndex, item.transform),
+        startOffset: index === 0 ? range.startOffset : undefined,
+        endOffset: index === array.length - 1 ? range.endOffset : undefined,
+      }),
+    );
 
     addBookmark({
       key: crypto.randomUUID(),

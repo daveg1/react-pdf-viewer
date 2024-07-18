@@ -2,7 +2,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./PdfViewer.css";
 import { Document, Page, pdfjs } from "react-pdf";
-import { useCallback, useContext, useMemo, useRef } from "react";
+import React, { useCallback, useContext, useMemo, useRef } from "react";
 import { PdfViewerMenu } from "./components/PdfViewerMenu";
 import { renderPdfText, RenderProps } from "./utils/render-pdf-text";
 import {
@@ -90,6 +90,33 @@ function Layout(props: PdfViewerProps) {
     }
   }
 
+  function highlightBookmarks(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    const target = e.target as HTMLElement;
+    if (target.nodeName !== "MARK") return resetHighlights();
+
+    const highlights = document.querySelectorAll(
+      ".textLayer mark",
+    ) as NodeListOf<HTMLElement>;
+
+    highlights.forEach((el) => {
+      if (el.id === target.id) {
+        el.classList.add("ring-2", "ring-black", "!bg-blue-300/50");
+      } else {
+        el.classList.remove("ring-2", "ring-black", "!bg-blue-300/50");
+      }
+    });
+  }
+
+  function resetHighlights() {
+    const highlights = document.querySelectorAll(
+      ".textLayer mark",
+    ) as NodeListOf<HTMLElement>;
+
+    highlights.forEach((el) =>
+      el.classList.remove("ring-2", "ring-black", "!bg-blue-300/50"),
+    );
+  }
+
   /**
    * Text renderer
    */
@@ -143,6 +170,8 @@ function Layout(props: PdfViewerProps) {
                   }
                   customTextRenderer={textRenderer}
                   onGetTextSuccess={(e) => onTextLayerLoaded(e, item.index)}
+                  onMouseOver={(e) => highlightBookmarks(e)}
+                  onMouseLeave={() => resetHighlights()}
                 />
               </div>
             ))}

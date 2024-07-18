@@ -8,8 +8,9 @@ export type RenderProps = {
   itemIndex: number;
 } & TextItem;
 
+// TODO: investigate using SVG to highlight text and have complex outlines on hover
 const markStyles =
-  "cursor-pointer text-transparent bg-yellow-300/50 rounded-sm hover:ring-2 hover:ring-black hover:bg-blue-300/50 ";
+  "cursor-pointer text-transparent bg-yellow-300/50 rounded-sm hover:ring-2 hover:ring-black hover:bg-blue-300/50 py-0.5";
 
 export function renderPdfText(props: RenderProps, bookmarks: Bookmark[]) {
   const hash = generateHash(props.pageIndex, props.transform);

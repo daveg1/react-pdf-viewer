@@ -18,12 +18,10 @@ export function PdfSidebar() {
     ) as NodeListOf<HTMLElement>;
 
     highlights.forEach((el) => {
-      // el.className = "text-transparent bg-yellow-300/50";
-
       if (el.id === key) {
-        el.classList.add("ring-2", "ring-black", "bg-blue-300/50");
+        el.classList.add("ring-2", "ring-black", "!bg-blue-300/50");
       } else {
-        el.classList.remove("ring-2", "ring-black", "bg-blue-300/50");
+        el.classList.remove("ring-2", "ring-black", "!bg-blue-300/50");
       }
     });
   }
@@ -34,7 +32,7 @@ export function PdfSidebar() {
     ) as NodeListOf<HTMLElement>;
 
     highlights.forEach((el) =>
-      el.classList.remove("ring-2", "ring-black", "bg-blue-300/50"),
+      el.classList.remove("ring-2", "ring-black", "!bg-blue-300/50"),
     );
   }
 
