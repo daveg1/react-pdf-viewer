@@ -3,10 +3,6 @@
  * @param node Anchor node from selection object
  * @returns
  */
-export function findTextLayer(node: Node): HTMLElement {
-  const parent = node.parentElement!.parentElement as HTMLElement;
-
-  return parent!.classList.contains("markedContent")
-    ? (parent.parentElement as HTMLElement)
-    : parent;
+export function findTextLayer(node: Node): HTMLElement | null {
+  return node.parentElement?.closest(".react-pdf__Page__textContent") ?? null;
 }

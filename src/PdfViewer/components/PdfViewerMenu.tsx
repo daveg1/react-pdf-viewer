@@ -1,4 +1,4 @@
-import { useContext, useRef } from "react";
+import { useCallback, useContext, useEffect, useRef } from "react";
 import { PdfContext } from "../contexts/pdf.context";
 import { BookmarkContext, TransformHash } from "../contexts/bookmark.context";
 import { ScrollContext } from "../contexts/scroll.context";
@@ -6,6 +6,7 @@ import { TextItem } from "pdfjs-dist/types/src/display/api";
 import { generateHash } from "../utils/generate-hash";
 import { LayoutContext } from "../contexts/layout.context";
 import { FileContext } from "../contexts/file.context";
+import { SCROLL_PADDING } from "../constants/pdf.constants";
 
 export function PdfViewerMenu() {
   const { pdfProperties, hasSelection } = useContext(PdfContext);
@@ -20,15 +21,24 @@ export function PdfViewerMenu() {
   const MIN_PAGE = 1;
   const MAX_PAGE = pdfProperties.numPages;
 
-  function pageBackward() {
+  const nudgeOffset = useCallback(
+    (direction: 1 | -1) => {
+      scrollToPage({
+        offset: virtualList.scrollOffset! + SCROLL_PADDING * 1.5 * direction,
+      });
+    },
+    [scrollToPage, virtualList],
+  );
+
+  const pageBackward = useCallback(() => {
     const pageNum = Math.max(pdfProperties.pageNumber - 1, MIN_PAGE);
     scrollToPage({ pageNumber: pageNum });
-  }
+  }, [pdfProperties, scrollToPage]);
 
-  function pageForward() {
+  const pageForward = useCallback(() => {
     const pageNum = Math.min(pdfProperties.pageNumber + 1, MAX_PAGE);
     scrollToPage({ pageNumber: pageNum });
-  }
+  }, [pdfProperties, scrollToPage, MAX_PAGE]);
 
   function setPage(e: React.ChangeEvent<HTMLInputElement>) {
     const value = +e.target.value || 1;
@@ -36,23 +46,26 @@ export function PdfViewerMenu() {
     scrollToPage({ pageNumber: value });
   }
 
-  function getTextItemsInRange(range: Range, pageIndex: number) {
-    const startNode = range.startContainer.parentElement!;
-    const endNode = range.endContainer.parentElement!;
+  const getTextItemsInRange = useCallback(
+    (range: Range, pageIndex: number) => {
+      const startNode = range.startContainer.parentElement!;
+      const endNode = range.endContainer.parentElement!;
 
-    const cachedItems = textLayerCache[pageIndex].items as TextItem[];
-    const startIndex = cachedItems.findIndex(
-      (item) => item.str === startNode.textContent,
-    );
-    const endIndex =
-      startNode === endNode
-        ? startIndex
-        : cachedItems.findIndex((item) => item.str === endNode.textContent);
+      const cachedItems = textLayerCache[pageIndex].items as TextItem[];
+      const startIndex = cachedItems.findIndex(
+        (item) => item.str === startNode.textContent,
+      );
+      const endIndex =
+        startNode === endNode
+          ? startIndex
+          : cachedItems.findIndex((item) => item.str === endNode.textContent);
 
-    return cachedItems.slice(startIndex, endIndex + 1);
-  }
+      return cachedItems.slice(startIndex, endIndex + 1);
+    },
+    [textLayerCache],
+  );
 
-  async function bookmarkText() {
+  const bookmarkSelection = useCallback(() => {
     const selection = window.getSelection()!;
     const range = selection.getRangeAt(0);
 
@@ -97,7 +110,14 @@ export function PdfViewerMenu() {
     });
 
     setIsSidebarOpen(true);
-  }
+    selection.removeAllRanges();
+  }, [
+    bookmarks,
+    addBookmark,
+    getTextItemsInRange,
+    setIsSidebarOpen,
+    virtualList,
+  ]);
 
   function openFile() {
     fileInputRef.current?.click();
@@ -112,9 +132,53 @@ export function PdfViewerMenu() {
     }
   }
 
-  function onSidebarButtonClick() {
+  const toggleSidebar = useCallback(() => {
     setIsSidebarOpen((v) => !v);
-  }
+  }, [setIsSidebarOpen]);
+
+  /**
+   * Keyboard shortcuts effect
+   */
+  useEffect(() => {
+    const keyDownListener = (e: KeyboardEvent) => {
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        nudgeOffset(-1);
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        nudgeOffset(1);
+      }
+      if (e.key === "o" && e.ctrlKey) {
+        e.preventDefault();
+        openFile();
+      }
+    };
+
+    const keyUpListener = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") pageBackward();
+      if (e.key === "ArrowRight") pageForward();
+      if (e.key === "[") toggleSidebar();
+      if (e.key === "b" && e.ctrlKey) {
+        e.preventDefault();
+        bookmarkSelection();
+      }
+    };
+
+    document.addEventListener("keydown", keyDownListener);
+    document.addEventListener("keyup", keyUpListener);
+
+    return () => {
+      document.removeEventListener("keydown", keyDownListener);
+      document.removeEventListener("keyup", keyUpListener);
+    };
+  }, [
+    bookmarkSelection,
+    nudgeOffset,
+    pageBackward,
+    pageForward,
+    toggleSidebar,
+  ]);
 
   return (
     <div className="sticky inset-x-0 top-0 z-50 flex h-10 items-center bg-zinc-700 px-2 text-white shadow-lg">
@@ -122,7 +186,7 @@ export function PdfViewerMenu() {
       <div className="flex items-center gap-2">
         <button
           className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25"
-          onClick={onSidebarButtonClick}
+          onClick={toggleSidebar}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -137,8 +201,9 @@ export function PdfViewerMenu() {
             />
           </svg>
 
-          <span className="pointer-events-none absolute -bottom-8 left-0 w-max rounded bg-zinc-800 px-2 opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
             Sidebar
+            <span className="opacity-60">Ctrl+[</span>
           </span>
         </button>
 
@@ -170,15 +235,16 @@ export function PdfViewerMenu() {
             />
           </svg>
 
-          <span className="pointer-events-none absolute -bottom-8 left-0 w-max rounded bg-zinc-800 px-2 opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
             Open file
+            <span className="opacity-60">Ctrl+O</span>
           </span>
         </button>
 
         <button
           className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded p-1 hover:bg-white/10 active:bg-white/25 disabled:pointer-events-none disabled:bg-transparent disabled:opacity-50"
           disabled={!hasSelection}
-          onClick={bookmarkText}
+          onClick={bookmarkSelection}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -195,30 +261,36 @@ export function PdfViewerMenu() {
             />
           </svg>
 
-          <span className="pointer-events-none absolute -bottom-8 -left-8 w-max rounded bg-zinc-800 px-2 opacity-0 transition-opacity group-hover:opacity-100">
-            Bookmark selected text
+          <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+            Bookmark selection
+            <span className="opacity-60">Ctrl+B</span>
           </span>
         </button>
       </div>
 
       {/* Middle section */}
-      <div className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center gap-4">
+      <div className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center gap-2">
         <button
-          className="grid h-7 w-7 place-items-center rounded bg-white/10 hover:bg-white/25"
+          className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25"
           onClick={pageBackward}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
+            viewBox="0 0 16 16"
             fill="currentColor"
-            className="size-5"
+            className="size-4"
           >
             <path
               fillRule="evenodd"
-              d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
+              d="M14 8a.75.75 0 0 1-.75.75H4.56l3.22 3.22a.75.75 0 1 1-1.06 1.06l-4.5-4.5a.75.75 0 0 1 0-1.06l4.5-4.5a.75.75 0 0 1 1.06 1.06L4.56 7.25h8.69A.75.75 0 0 1 14 8Z"
               clipRule="evenodd"
             />
           </svg>
+
+          <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+            Prev page
+            <span className="opacity-60">Left arrow</span>
+          </span>
         </button>
 
         <span className="flex items-baseline gap-1">
@@ -235,21 +307,26 @@ export function PdfViewerMenu() {
         </span>
 
         <button
-          className="grid h-7 w-7 place-items-center rounded bg-white/10 hover:bg-white/25"
+          className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25"
           onClick={pageForward}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
+            viewBox="0 0 16 16"
             fill="currentColor"
-            className="size-5"
+            className="size-4"
           >
             <path
               fillRule="evenodd"
-              d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
+              d="M2 8a.75.75 0 0 1 .75-.75h8.69L8.22 4.03a.75.75 0 0 1 1.06-1.06l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 0 1-1.06-1.06l3.22-3.22H2.75A.75.75 0 0 1 2 8Z"
               clipRule="evenodd"
             />
           </svg>
+
+          <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+            Next page
+            <span className="opacity-60">Right arrow</span>
+          </span>
         </button>
       </div>
     </div>

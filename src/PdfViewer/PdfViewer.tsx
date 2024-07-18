@@ -2,7 +2,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./PdfViewer.css";
 import { Document, Page, pdfjs } from "react-pdf";
-import React, { useCallback, useContext, useMemo, useRef } from "react";
+import React, { useCallback, useContext, useEffect, useMemo } from "react";
 import { PdfViewerMenu } from "./components/PdfViewerMenu";
 import { renderPdfText, RenderProps } from "./utils/render-pdf-text";
 import {
@@ -43,31 +43,6 @@ function Layout(props: PdfViewerProps) {
   const { scrollRef, virtualList, scrollToPage } = useContext(ScrollContext);
   const { bookmarks, textLayerCache, setTextLayerCache } =
     useContext(BookmarkContext);
-
-  /**
-   * Selection detection
-   */
-
-  const DOMDocumentRef = useRef(document);
-  DOMDocumentRef.current.addEventListener("selectionchange", () => {
-    const sel = window.getSelection();
-
-    if (!sel) {
-      setHasSelection(false);
-      return;
-    }
-
-    const startNode = findTextLayer(sel.anchorNode!);
-    const endNode = findTextLayer(sel.focusNode!);
-
-    const isInsideTextLayer =
-      !!startNode?.classList?.contains("textLayer") &&
-      !!endNode?.classList.contains("textLayer");
-
-    const hasSel = isInsideTextLayer && !!sel?.toString().trim();
-
-    setHasSelection(hasSel);
-  });
 
   /**
    * Event Listeners
@@ -124,6 +99,38 @@ function Layout(props: PdfViewerProps) {
     (props: RenderProps) => renderPdfText(props, bookmarks),
     [bookmarks],
   );
+
+  /**
+   * Selection detection
+   */
+
+  useEffect(() => {
+    const selectionListener = () => {
+      const sel = window.getSelection();
+
+      if (!sel || !sel.anchorNode || !sel.focusNode) {
+        setHasSelection(false);
+        return;
+      }
+
+      const startNode = findTextLayer(sel.anchorNode!);
+      const endNode = findTextLayer(sel.focusNode!);
+
+      const isInsideTextLayer =
+        !!startNode?.classList?.contains("textLayer") &&
+        !!endNode?.classList.contains("textLayer");
+
+      const hasSel = isInsideTextLayer && !!sel?.toString().trim();
+
+      setHasSelection(hasSel);
+    };
+
+    document.addEventListener("selectionchange", selectionListener);
+
+    return () => {
+      document.removeEventListener("selectionchange", selectionListener);
+    };
+  }, [setHasSelection]);
 
   return (
     <>
