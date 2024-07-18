@@ -1,6 +1,6 @@
 import { useVirtualizer, Virtualizer } from "@tanstack/react-virtual";
 import React, { createContext, useContext, useRef } from "react";
-import { PdfContext } from "./pdf.context";
+import { PdfContext, PdfProperties } from "./pdf.context";
 import {
   PAGE_GAP,
   PAGE_HEIGHT,
@@ -30,7 +30,7 @@ export function ScrollContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { pdfProperties, setPdfProperties } = useContext(PdfContext);
+  const { pdfProperties, updateProperties } = useContext(PdfContext);
 
   const ignoreScrollEvents = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -58,11 +58,10 @@ export function ScrollContextProvider({
 
     if (!itemOnScreen) return;
 
-    setPdfProperties((value) => ({
-      ...value,
+    updateProperties({
       pageNumber: itemOnScreen.index,
       scrollOffset: virtualList.scrollOffset!,
-    }));
+    });
   }
 
   /**
@@ -116,24 +115,27 @@ export function ScrollContextProvider({
       await preScroll(options);
     }
 
+    let pdfPropsToUpdate: Partial<PdfProperties> = {};
+
     if (options.pageNumber) {
       virtualList.scrollToIndex(options.pageNumber - 1, {
         align: "start",
         behavior: options.scrollBehaviour,
       });
 
-      setPdfProperties((value) => ({
-        ...value,
-        pageNumber: options.pageNumber ?? 0,
-      }));
+      pdfPropsToUpdate = { pageNumber: options.pageNumber };
     } else if (options.offset) {
       virtualList.scrollToOffset(options.offset, {
         align: "start",
         behavior: options.scrollBehaviour,
       });
+
+      pdfPropsToUpdate = { scrollOffset: options.offset };
     }
 
     ignoreScrollEvents.current = false;
+
+    updateProperties(pdfPropsToUpdate);
   };
 
   const value: ScrollContext = { scrollRef, virtualList, scrollToPage };

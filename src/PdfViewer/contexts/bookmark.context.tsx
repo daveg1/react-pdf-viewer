@@ -1,5 +1,7 @@
 import { TextContent } from "pdfjs-dist/types/src/display/api";
-import React, { createContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { PdfContext } from "./pdf.context";
+import { deserialise, serialise } from "../utils/local-storage";
 
 const LOCAL_STORAGE_KEY = "davepdf_bookmarks";
 
@@ -38,12 +40,17 @@ export interface Bookmark {
 
 interface BookmarkContext {
   bookmarks: Bookmark[];
-  setBookmarks: React.Dispatch<React.SetStateAction<Bookmark[]>>;
+  addBookmark: (value: Bookmark) => void;
+  removeBookmark: (key: string) => void;
   textLayerCache: Record<number, TextContent>;
   setTextLayerCache: React.Dispatch<
     React.SetStateAction<Record<number, TextContent>>
   >;
 }
+
+type BookmarksSerial = {
+  [Key: string]: Bookmark[];
+};
 
 export const BookmarkContext = createContext<BookmarkContext>(null!);
 
@@ -52,42 +59,55 @@ export function BookmarkContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [bookmarks, _setBookmarks] = useState<Bookmark[]>(deserialise());
+  const [serial, setSerial] = useState<BookmarksSerial>(
+    deserialise<BookmarksSerial>(LOCAL_STORAGE_KEY),
+  );
+  const { fingerprint } = useContext(PdfContext);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>(
+    serial[fingerprint] ?? [],
+  );
   const [textLayerCache, setTextLayerCache] = useState<
     Record<number, TextContent>
   >({});
 
-  // Proxy to serialise the bookmarks whenever they'red changed
-  function setBookmarks(
-    value: Bookmark[] | ((prev: Bookmark[]) => Bookmark[]),
-  ) {
-    let newBookmarks: Bookmark[];
+  useEffect(() => {
+    setBookmarks(serial[fingerprint] ?? []);
+  }, [fingerprint, serial]);
 
-    if (typeof value === "function") {
-      newBookmarks = value(bookmarks);
-    } else {
-      newBookmarks = value;
-    }
+  function updateSerial(newBookmarks: Bookmark[]) {
+    const newSerial = { ...serial, [fingerprint]: newBookmarks };
 
-    serialise(newBookmarks);
-    _setBookmarks(newBookmarks);
+    setSerial(newSerial);
+    serialise<BookmarksSerial>(LOCAL_STORAGE_KEY, newSerial);
   }
 
-  const value = { bookmarks, setBookmarks, textLayerCache, setTextLayerCache };
+  function addBookmark(value: Bookmark) {
+    const newBookmarks = [...bookmarks, value];
+
+    setBookmarks(newBookmarks);
+    updateSerial(newBookmarks);
+  }
+
+  function removeBookmark(key: string) {
+    const newBookmarks = [...bookmarks];
+    const idx = bookmarks.findIndex((v) => v.key === key);
+    newBookmarks.splice(idx, 1);
+
+    setBookmarks(newBookmarks);
+    updateSerial(newBookmarks);
+  }
+
+  const value: BookmarkContext = {
+    bookmarks,
+    addBookmark,
+    removeBookmark,
+    textLayerCache,
+    setTextLayerCache,
+  };
 
   return (
     <BookmarkContext.Provider value={value}>
       {children}
     </BookmarkContext.Provider>
   );
-}
-
-function serialise(bookmarks: Bookmark[]) {
-  const serial = JSON.stringify(bookmarks);
-  window.localStorage.setItem(LOCAL_STORAGE_KEY, serial);
-}
-
-function deserialise() {
-  const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
-  return JSON.parse(raw ?? "[]") as Bookmark[];
 }

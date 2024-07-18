@@ -6,7 +6,7 @@ import { LayoutContext } from "../contexts/layout.context";
 
 export function PdfSidebar() {
   const { isSidebarOpen } = useContext(LayoutContext);
-  const { bookmarks, setBookmarks } = useContext(BookmarkContext);
+  const { bookmarks, removeBookmark } = useContext(BookmarkContext);
   const { scrollToPage } = useContext(ScrollContext);
 
   /**
@@ -45,15 +45,6 @@ export function PdfSidebar() {
         [bookmark.pageIndex]: [...(groups[bookmark.pageIndex] ?? []), bookmark],
       };
     }, {});
-  }
-
-  function removeBookmark(key: string) {
-    setBookmarks((values) => {
-      const idx = values.findIndex((v) => v.key === key);
-      const newValues = [...values];
-      newValues.splice(idx, 1);
-      return newValues;
-    });
   }
 
   return (

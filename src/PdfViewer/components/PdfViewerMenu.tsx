@@ -11,7 +11,7 @@ export function PdfViewerMenu() {
   const { pdfProperties, hasSelection } = useContext(PdfContext);
   const { virtualList, scrollToPage } = useContext(ScrollContext);
   const { setIsSidebarOpen } = useContext(LayoutContext);
-  const { bookmarks, setBookmarks, textLayerCache } =
+  const { bookmarks, addBookmark, textLayerCache } =
     useContext(BookmarkContext);
   const { setFile } = useContext(FileContext);
 
@@ -80,16 +80,13 @@ export function PdfViewerMenu() {
         };
       });
 
-    setBookmarks((value) => [
-      ...value,
-      {
-        key: crypto.randomUUID(),
-        selectedText,
-        scrollOffset,
-        pageIndex,
-        transformHashes,
-      },
-    ]);
+    addBookmark({
+      key: crypto.randomUUID(),
+      selectedText,
+      scrollOffset,
+      pageIndex,
+      transformHashes,
+    });
 
     setIsSidebarOpen(true);
   }

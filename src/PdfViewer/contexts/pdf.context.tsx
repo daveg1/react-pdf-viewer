@@ -1,21 +1,26 @@
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useState } from "react";
 import { deserialise, serialise } from "../utils/local-storage";
 import { PDFDocumentProxy } from "pdfjs-dist";
 
-interface PdfProperties {
+export interface PdfProperties {
   fingerprint: string;
   numPages: number;
   pageNumber: number;
   scrollOffset: number;
 }
 
-interface PdfPropertiesSerial {
-  files: PdfProperties[];
-}
+/**
+ * Map of PdfProperties indexed by the pdf fingerprint
+ */
+type PdfPropertiesSerial = {
+  [Key: string]: PdfProperties;
+};
 
 interface PdfContext {
+  fingerprint: string;
+  setFingerprint: React.Dispatch<React.SetStateAction<string>>;
   pdfProperties: PdfProperties;
-  setPdfProperties: React.Dispatch<React.SetStateAction<PdfProperties>>;
+  updateProperties: (props: Partial<PdfProperties>) => void;
   hasSelection: boolean;
   setHasSelection: React.Dispatch<React.SetStateAction<boolean>>;
   isLoaded: boolean;
@@ -32,7 +37,7 @@ export function PdfContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [serial] = useState<PdfPropertiesSerial>(
+  const [serial, setSerial] = useState<PdfPropertiesSerial>(
     deserialise<PdfPropertiesSerial>(LOCAL_STORAGE_KEY),
   );
   const [pdfProperties, setPdfProperties] = useState<PdfProperties>({
@@ -41,26 +46,24 @@ export function PdfContextProvider({
     pageNumber: 1,
     scrollOffset: 0,
   });
-
+  const [fingerprint, setFingerprint] = useState("");
   const [hasSelection, setHasSelection] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false); // purely to trigger ui update
 
-  useEffect(() => {
-    if (!pdfProperties.fingerprint) return;
+  function updateSerial(newProps: PdfProperties) {
+    const newSerial = { ...serial, [newProps.fingerprint]: newProps };
 
-    const newSerial: PdfPropertiesSerial = { files: [...(serial.files ?? [])] };
-    const index = newSerial.files.findIndex(
-      (f) => f.fingerprint === pdfProperties.fingerprint,
-    );
-
-    if (index > -1) {
-      newSerial.files[index] = { ...pdfProperties };
-    } else {
-      newSerial.files.push({ ...pdfProperties });
-    }
-
+    setSerial(newSerial);
     serialise<PdfPropertiesSerial>(LOCAL_STORAGE_KEY, newSerial);
-  }, [pdfProperties, serial]);
+  }
+
+  function updateProperties(props: Partial<PdfProperties>) {
+    const newProps = { ...pdfProperties, ...props };
+
+    setFingerprint(newProps.fingerprint);
+    setPdfProperties(newProps);
+    updateSerial(newProps);
+  }
 
   /**
    * Will try to use local storage first, then apply the provided document proxy.
@@ -69,16 +72,11 @@ export function PdfContextProvider({
    */
   function getInitialPdfState(doc: PDFDocumentProxy) {
     const fingerprint = doc.fingerprints[0];
+    setFingerprint(fingerprint);
 
-    if (fingerprint && serial.files) {
-      const localValue = serial.files.find(
-        (f) => f.fingerprint === fingerprint,
-      );
-
-      if (localValue) {
-        setPdfProperties({ ...localValue });
-        return localValue;
-      }
+    if (fingerprint in serial) {
+      setPdfProperties({ ...serial[fingerprint] });
+      return serial[fingerprint];
     }
 
     const newValue: PdfProperties = {
@@ -88,13 +86,15 @@ export function PdfContextProvider({
       fingerprint: doc.fingerprints[0],
     };
 
-    setPdfProperties(newValue);
+    updateProperties(newValue);
     return newValue;
   }
 
   const value: PdfContext = {
+    fingerprint,
+    setFingerprint,
     pdfProperties,
-    setPdfProperties,
+    updateProperties,
     hasSelection,
     setHasSelection,
     isLoaded,
