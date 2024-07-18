@@ -1,5 +1,10 @@
 import { useVirtualizer, Virtualizer } from "@tanstack/react-virtual";
-import React, { createContext, useContext, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import { PdfContext, PdfProperties } from "./pdf.context";
 import {
   PAGE_GAP,
@@ -10,16 +15,47 @@ import {
 interface ScrollContext {
   scrollRef: React.LegacyRef<HTMLDivElement> | undefined;
   virtualList: Virtualizer<HTMLDivElement, Element>;
+
+  /**
+   * Utility to scroll within the PDF.
+   *
+   * TODO: set this on virtualList.scrollToFn?
+   *
+   * @param options The scroll options (see {@link ScrollOptions})
+   */
   scrollToPage: (scrollOptions: {
     pageNumber?: number;
     offset?: number;
     scrollBehaviour?: "smooth" | "auto";
   }) => void;
+  scrollPercent: React.MutableRefObject<number>;
 }
 
+/**
+ * Scroll options used by {@link ScrollContext.scrollToPage}
+ *
+ * TODO: add scrollPercent option
+ */
 interface ScrollOptions {
+  /**
+   * The page number to scroll to. If this is present, ignore offset.
+   */
   pageNumber?: number;
+
+  /**
+   * The scroll offset to scroll to. If pageNumber is present, this option is ignored.
+   */
   offset?: number;
+
+  /**
+   * The scroll behaviour to use when scrolling.
+   *
+   * Auto means it will snap to the destination.
+   *
+   * If using smooth, special logic is applied to decrease the scroll time if the destination is far away enough (see preScroll function).
+   *
+   * @default 'auto'
+   */
   scrollBehaviour?: "smooth" | "auto";
 }
 
@@ -34,6 +70,7 @@ export function ScrollContextProvider({
 
   const ignoreScrollEvents = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollPercent = useRef<number>(1);
 
   const virtualList = useVirtualizer({
     count: pdfProperties.numPages,
@@ -63,6 +100,14 @@ export function ScrollContextProvider({
       scrollOffset: virtualList.scrollOffset!,
     });
   }
+
+  // Re-measure item height and adjust scrollOffset when scaling PDF
+  useLayoutEffect(() => {
+    virtualList.measure();
+    virtualList.scrollToOffset(
+      virtualList.getTotalSize() * scrollPercent.current,
+    );
+  }, [virtualList, scrollPercent, pdfProperties.scale]);
 
   /**
    * Pre-scrolls to target to try create a better UX.
@@ -99,12 +144,6 @@ export function ScrollContextProvider({
     }
   }
 
-  /**
-   * Utility to scroll within the PDF.
-   *
-   * Otherwise, scroll by index if present
-   * @param options
-   */
   const scrollToPage = async (options: ScrollOptions) => {
     ignoreScrollEvents.current = true;
 
@@ -138,7 +177,12 @@ export function ScrollContextProvider({
     updateProperties(pdfPropsToUpdate);
   };
 
-  const value: ScrollContext = { scrollRef, virtualList, scrollToPage };
+  const value: ScrollContext = {
+    scrollRef,
+    virtualList,
+    scrollToPage,
+    scrollPercent,
+  };
 
   return (
     <ScrollContext.Provider value={value}>{children}</ScrollContext.Provider>

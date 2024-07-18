@@ -11,7 +11,8 @@ import { SCROLL_PADDING } from "../constants/pdf.constants";
 export function PdfToolbar() {
   const { pdfProperties, updateProperties, hasSelection } =
     useContext(PdfContext);
-  const { virtualList, scrollToPage } = useContext(ScrollContext);
+  const { virtualList, scrollToPage, scrollPercent } =
+    useContext(ScrollContext);
   const { setIsSidebarOpen } = useContext(LayoutContext);
   const { bookmarks, addBookmark, textLayerCache } =
     useContext(BookmarkContext);
@@ -23,7 +24,7 @@ export function PdfToolbar() {
   const MAX_PAGE = pdfProperties.numPages;
   const MIN_SCALE = 0.5;
   const MAX_SCALE = 2.5;
-  const SCALE_STEP = 0.15;
+  const SCALE_STEP = 0.1;
 
   const nudgeOffset = useCallback(
     (direction: 1 | -1) => {
@@ -91,7 +92,9 @@ export function PdfToolbar() {
     const SCROLL_PADDING = 32;
     const virtualOffset =
       virtualList.getOffsetForIndex(pageIndex, "start")?.[0] ?? 0;
-    const scrollOffset = +startNode.offsetTop + virtualOffset - SCROLL_PADDING;
+    const scrollPercent =
+      (+startNode.offsetTop + virtualOffset - SCROLL_PADDING) /
+      virtualList.getTotalSize();
 
     // selected text layer items
     const textItems = getTextItemsInRange(range, pageIndex);
@@ -108,7 +111,7 @@ export function PdfToolbar() {
     addBookmark({
       key: crypto.randomUUID(),
       selectedText,
-      scrollOffset,
+      scrollPercent,
       pageIndex,
       transformHashes,
     });
@@ -141,16 +144,30 @@ export function PdfToolbar() {
   }, [setIsSidebarOpen]);
 
   const zoomIn = useCallback(() => {
+    if (pdfProperties.scale === MAX_SCALE) return;
+    scrollPercent.current =
+      virtualList.scrollOffset! / virtualList.getTotalSize();
+
     updateProperties({
       scale: Math.min(pdfProperties.scale + SCALE_STEP, MAX_SCALE),
     });
-  }, [pdfProperties, updateProperties]);
+  }, [pdfProperties.scale, virtualList, updateProperties, scrollPercent]);
 
   const zoomOut = useCallback(() => {
+    if (pdfProperties.scale === MIN_SCALE) return;
+    scrollPercent.current =
+      virtualList.scrollOffset! / virtualList.getTotalSize();
+
     updateProperties({
       scale: Math.max(pdfProperties.scale - SCALE_STEP, MIN_SCALE),
     });
-  }, [pdfProperties, updateProperties]);
+  }, [pdfProperties.scale, virtualList, updateProperties, scrollPercent]);
+
+  const resetZoom = useCallback(() => {
+    scrollPercent.current =
+      virtualList.scrollOffset! / virtualList.getTotalSize();
+    updateProperties({ scale: 1 });
+  }, [virtualList, updateProperties, scrollPercent]);
 
   /**
    * Keyboard shortcuts effect
@@ -171,6 +188,7 @@ export function PdfToolbar() {
       }
       if (e.key === "-" && e.ctrlKey) e.preventDefault();
       if (e.key === "=" && e.ctrlKey) e.preventDefault();
+      if (e.key === "0" && e.ctrlKey) resetZoom();
     };
 
     const keyUpListener = (e: KeyboardEvent) => {
@@ -200,6 +218,7 @@ export function PdfToolbar() {
     toggleSidebar,
     zoomOut,
     zoomIn,
+    resetZoom,
   ]);
 
   return (
@@ -289,7 +308,12 @@ export function PdfToolbar() {
           </span>
         </button>
 
-        <span>zoom: {Math.round(pdfProperties.scale * 100)}%</span>
+        <span
+          className="cursor-pointer select-none rounded px-2 py-1 leading-tight hover:bg-white/10 active:bg-white/25"
+          onClick={resetZoom}
+        >
+          zoom: {Math.round(pdfProperties.scale * 100)}%
+        </span>
       </div>
 
       {/* Middle section */}

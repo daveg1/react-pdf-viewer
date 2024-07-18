@@ -7,7 +7,7 @@ import { LayoutContext } from "../contexts/layout.context";
 export function PdfSidebar() {
   const { isSidebarOpen } = useContext(LayoutContext);
   const { bookmarks, removeBookmark } = useContext(BookmarkContext);
-  const { scrollToPage } = useContext(ScrollContext);
+  const { virtualList, scrollToPage } = useContext(ScrollContext);
 
   /**
    * Make it easier to see which bookmark we're hovering over
@@ -48,7 +48,7 @@ export function PdfSidebar() {
   return (
     <div
       rel={isSidebarOpen ? "open" : "closed"}
-      className="Sidebar w-full max-w-md select-none bg-gray-300 p-4"
+      className="Sidebar w-full max-w-sm select-none bg-gray-300 p-4"
     >
       <h3 className="mb-4 text-xl font-medium leading-tight">Bookmarks</h3>
 
@@ -108,7 +108,10 @@ export function PdfSidebar() {
                   <span
                     className="-my-1 -mr-2 w-full max-w-sm overflow-hidden text-ellipsis whitespace-nowrap py-1 pr-2"
                     onClick={() =>
-                      scrollToPage({ offset: bookmark.scrollOffset })
+                      scrollToPage({
+                        offset:
+                          bookmark.scrollPercent * virtualList.getTotalSize(),
+                      })
                     }
                   >
                     {bookmark.selectedText}

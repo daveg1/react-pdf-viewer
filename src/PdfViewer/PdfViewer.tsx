@@ -2,13 +2,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./PdfViewer.css";
 import { Document, Page, pdfjs } from "react-pdf";
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-} from "react";
+import React, { useCallback, useContext, useEffect, useMemo } from "react";
 import { PdfToolbar } from "./components/PdfToolbar";
 import { renderPdfText, RenderProps } from "./utils/render-pdf-text";
 import {
@@ -137,11 +131,6 @@ function Layout(props: PdfViewerProps) {
     };
   }, [setHasSelection]);
 
-  // Ensure virtual list rerenders when scale is changed
-  useLayoutEffect(() => {
-    virtualList.measure();
-  }, [virtualList, pdfProperties.scale]);
-
   return (
     <>
       <PdfToolbar />
@@ -170,7 +159,7 @@ function Layout(props: PdfViewerProps) {
             {virtualList.getVirtualItems().map((item) => (
               <div
                 key={item.key}
-                className="absolute left-0 top-0 flex w-full justify-center"
+                className="absolute inset-x-0 top-0 mx-auto flex w-max justify-center"
                 style={{
                   height: `${item.size * pdfProperties.scale}px`,
                   transform: `translateY(${item.start}px)`,
