@@ -7,6 +7,7 @@ export interface PdfProperties {
   numPages: number;
   pageNumber: number;
   scrollOffset: number;
+  scale: number;
 }
 
 /**
@@ -45,6 +46,7 @@ export function PdfContextProvider({
     numPages: 0,
     pageNumber: 1,
     scrollOffset: 0,
+    scale: 1,
   });
   const [fingerprint, setFingerprint] = useState("");
   const [hasSelection, setHasSelection] = useState(false);
@@ -80,10 +82,11 @@ export function PdfContextProvider({
     }
 
     const newValue: PdfProperties = {
-      scrollOffset: 0,
-      pageNumber: 1,
-      numPages: doc.numPages,
       fingerprint: doc.fingerprints[0],
+      numPages: doc.numPages,
+      pageNumber: 1,
+      scrollOffset: 0,
+      scale: 1,
     };
 
     updateProperties(newValue);

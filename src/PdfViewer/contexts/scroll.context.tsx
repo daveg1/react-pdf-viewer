@@ -38,7 +38,7 @@ export function ScrollContextProvider({
   const virtualList = useVirtualizer({
     count: pdfProperties.numPages,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => PAGE_HEIGHT,
+    estimateSize: () => PAGE_HEIGHT * pdfProperties.scale,
     gap: PAGE_GAP,
     paddingStart: SCROLL_PADDING,
     paddingEnd: SCROLL_PADDING,

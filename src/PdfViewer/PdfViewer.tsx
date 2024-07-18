@@ -2,7 +2,13 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./PdfViewer.css";
 import { Document, Page, pdfjs } from "react-pdf";
-import React, { useCallback, useContext, useEffect, useMemo } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from "react";
 import { PdfToolbar } from "./components/PdfToolbar";
 import { renderPdfText, RenderProps } from "./utils/render-pdf-text";
 import {
@@ -20,7 +26,7 @@ import {
   ScrollContext,
   ScrollContextProvider,
 } from "./contexts/scroll.context";
-import { PAGE_HEIGHT, VIEWPORT_HEIGHT } from "./constants/pdf.constants";
+import { VIEWPORT_HEIGHT } from "./constants/pdf.constants";
 import { LayoutContextProvider } from "./contexts/layout.context";
 import { FileContext, FileContextProvider } from "./contexts/file.context";
 import { findTextLayer } from "./utils/find-text-layer";
@@ -40,7 +46,7 @@ function Layout(props: PdfViewerProps) {
   const options = useMemo(() => props.options, [props]);
 
   const { file } = useContext(FileContext);
-  const { setHasSelection, setIsLoaded, getInitialPdfState } =
+  const { setHasSelection, setIsLoaded, getInitialPdfState, pdfProperties } =
     useContext(PdfContext);
   const { scrollRef, virtualList, scrollToPage } = useContext(ScrollContext);
   const { bookmarks, textLayerCache, setTextLayerCache } =
@@ -65,6 +71,7 @@ function Layout(props: PdfViewerProps) {
     virtualList.scrollOffset = state.scrollOffset;
   }
 
+  // TODO: investigate bug with clicking TOC
   function onItemClick({ pageNumber }: { pageNumber: number }) {
     scrollToPage({ pageNumber });
   }
@@ -130,6 +137,11 @@ function Layout(props: PdfViewerProps) {
     };
   }, [setHasSelection]);
 
+  // Ensure virtual list rerenders when scale is changed
+  useLayoutEffect(() => {
+    virtualList.measure();
+  }, [virtualList, pdfProperties.scale]);
+
   return (
     <>
       <PdfToolbar />
@@ -160,24 +172,28 @@ function Layout(props: PdfViewerProps) {
                 key={item.key}
                 className="absolute left-0 top-0 flex w-full justify-center"
                 style={{
-                  height: `${item.size}px`,
+                  height: `${item.size * pdfProperties.scale}px`,
                   transform: `translateY(${item.start}px)`,
                 }}
               >
                 <Page
                   className="shadow-md"
                   height={item.size}
+                  canvasBackground="transparent"
                   pageNumber={item.index + 1}
-                  loading={
-                    <div
-                      className="opacity-50"
-                      style={{ height: `${PAGE_HEIGHT}px` }}
-                    ></div>
-                  }
                   customTextRenderer={textRenderer}
                   onGetTextSuccess={(e) => onTextLayerLoaded(e, item.index)}
                   onMouseOver={(e) => highlightBookmarks(e)}
                   onMouseLeave={() => resetHighlights()}
+                  loading={
+                    <div
+                      className="opacity-50"
+                      style={{
+                        height: `${item.size * pdfProperties.scale}px`,
+                        width: "100%",
+                      }}
+                    ></div>
+                  }
                 />
               </div>
             ))}

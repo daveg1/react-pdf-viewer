@@ -9,7 +9,8 @@ import { FileContext } from "../contexts/file.context";
 import { SCROLL_PADDING } from "../constants/pdf.constants";
 
 export function PdfToolbar() {
-  const { pdfProperties, hasSelection } = useContext(PdfContext);
+  const { pdfProperties, updateProperties, hasSelection } =
+    useContext(PdfContext);
   const { virtualList, scrollToPage } = useContext(ScrollContext);
   const { setIsSidebarOpen } = useContext(LayoutContext);
   const { bookmarks, addBookmark, textLayerCache } =
@@ -20,6 +21,9 @@ export function PdfToolbar() {
 
   const MIN_PAGE = 1;
   const MAX_PAGE = pdfProperties.numPages;
+  const MIN_SCALE = 0.5;
+  const MAX_SCALE = 2.5;
+  const SCALE_STEP = 0.15;
 
   const nudgeOffset = useCallback(
     (direction: 1 | -1) => {
@@ -136,6 +140,18 @@ export function PdfToolbar() {
     setIsSidebarOpen((v) => !v);
   }, [setIsSidebarOpen]);
 
+  const zoomIn = useCallback(() => {
+    updateProperties({
+      scale: Math.min(pdfProperties.scale + SCALE_STEP, MAX_SCALE),
+    });
+  }, [pdfProperties, updateProperties]);
+
+  const zoomOut = useCallback(() => {
+    updateProperties({
+      scale: Math.max(pdfProperties.scale - SCALE_STEP, MIN_SCALE),
+    });
+  }, [pdfProperties, updateProperties]);
+
   /**
    * Keyboard shortcuts effect
    */
@@ -153,6 +169,8 @@ export function PdfToolbar() {
         e.preventDefault();
         openFile();
       }
+      if (e.key === "-" && e.ctrlKey) e.preventDefault();
+      if (e.key === "=" && e.ctrlKey) e.preventDefault();
     };
 
     const keyUpListener = (e: KeyboardEvent) => {
@@ -163,6 +181,8 @@ export function PdfToolbar() {
         e.preventDefault();
         bookmarkSelection();
       }
+      if (e.key === "-" && e.ctrlKey) zoomOut();
+      if (e.key === "=" && e.ctrlKey) zoomIn();
     };
 
     document.addEventListener("keydown", keyDownListener);
@@ -178,6 +198,8 @@ export function PdfToolbar() {
     pageBackward,
     pageForward,
     toggleSidebar,
+    zoomOut,
+    zoomIn,
   ]);
 
   return (
@@ -266,6 +288,8 @@ export function PdfToolbar() {
             <span className="opacity-60">Ctrl+B</span>
           </span>
         </button>
+
+        <span>zoom: {Math.round(pdfProperties.scale * 100)}%</span>
       </div>
 
       {/* Middle section */}
