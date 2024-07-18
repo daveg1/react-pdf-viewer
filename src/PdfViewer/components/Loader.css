@@ -1,0 +1,13 @@
+.loader {
+	@apply w-12 h-12 border-4 border-black border-b-transparent rounded-full inline-block box-border;
+	animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+	0% {
+		transform: rotate(0turn);
+	}
+	100% {
+		transform: rotate(1turn);
+	}
+}

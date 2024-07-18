@@ -24,6 +24,8 @@ import { PAGE_HEIGHT, VIEWPORT_HEIGHT } from "./constants/pdf.constants";
 import { LayoutContextProvider } from "./contexts/layout.context";
 import { FileContext, FileContextProvider } from "./contexts/file.context";
 import { findTextLayer } from "./utils/find-text-layer";
+import { PdfEmptyState } from "./components/PdfEmptyState";
+import { PdfLoadingState } from "./components/PdfLoadingState";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -43,6 +45,14 @@ function Layout(props: PdfViewerProps) {
   const { scrollRef, virtualList, scrollToPage } = useContext(ScrollContext);
   const { bookmarks, textLayerCache, setTextLayerCache } =
     useContext(BookmarkContext);
+
+  /**
+   * Text renderer
+   */
+  const textRenderer = useCallback(
+    (props: RenderProps) => renderPdfText(props, bookmarks),
+    [bookmarks],
+  );
 
   /**
    * Event Listeners
@@ -92,18 +102,6 @@ function Layout(props: PdfViewerProps) {
     );
   }
 
-  /**
-   * Text renderer
-   */
-  const textRenderer = useCallback(
-    (props: RenderProps) => renderPdfText(props, bookmarks),
-    [bookmarks],
-  );
-
-  /**
-   * Selection detection
-   */
-
   useEffect(() => {
     const selectionListener = () => {
       const sel = window.getSelection();
@@ -142,7 +140,8 @@ function Layout(props: PdfViewerProps) {
         className="flex justify-center bg-gray-400"
         onLoadSuccess={onLoaded}
         onItemClick={onItemClick}
-        loading={null}
+        loading={<PdfLoadingState />}
+        noData={<PdfEmptyState />}
         // inputRef={scrollRef} // <--- experiment with this
       >
         <PdfSidebar />
