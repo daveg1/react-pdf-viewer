@@ -3,7 +3,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./PdfViewer.css";
 import { Document, Page, pdfjs } from "react-pdf";
 import React, { useCallback, useContext, useEffect, useMemo } from "react";
-import { PdfViewerMenu } from "./components/PdfViewerMenu";
+import { PdfToolbar } from "./components/PdfToolbar";
 import { renderPdfText, RenderProps } from "./utils/render-pdf-text";
 import {
   DocumentInitParameters,
@@ -132,7 +132,7 @@ function Layout(props: PdfViewerProps) {
 
   return (
     <>
-      <PdfViewerMenu />
+      <PdfToolbar />
 
       <Document
         file={file}

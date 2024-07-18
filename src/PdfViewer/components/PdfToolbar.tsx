@@ -8,7 +8,7 @@ import { LayoutContext } from "../contexts/layout.context";
 import { FileContext } from "../contexts/file.context";
 import { SCROLL_PADDING } from "../constants/pdf.constants";
 
-export function PdfViewerMenu() {
+export function PdfToolbar() {
   const { pdfProperties, hasSelection } = useContext(PdfContext);
   const { virtualList, scrollToPage } = useContext(ScrollContext);
   const { setIsSidebarOpen } = useContext(LayoutContext);
