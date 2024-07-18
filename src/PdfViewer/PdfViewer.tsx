@@ -23,6 +23,7 @@ import {
 import { PAGE_HEIGHT, VIEWPORT_HEIGHT } from "./constants/pdf.constants";
 import { LayoutContextProvider } from "./contexts/layout.context";
 import { FileContext, FileContextProvider } from "./contexts/file.context";
+import { findTextLayer } from "./utils/find-text-layer";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -50,8 +51,15 @@ function Layout(props: PdfViewerProps) {
   const DOMDocumentRef = useRef(document);
   DOMDocumentRef.current.addEventListener("selectionchange", () => {
     const sel = window.getSelection();
-    const startNode = sel?.anchorNode?.parentElement?.parentElement;
-    const endNode = sel?.focusNode?.parentElement?.parentElement;
+
+    if (!sel) {
+      setHasSelection(false);
+      return;
+    }
+
+    const startNode = findTextLayer(sel.anchorNode!);
+    const endNode = findTextLayer(sel.focusNode!);
+
     const isInsideTextLayer =
       !!startNode?.classList?.contains("textLayer") &&
       !!endNode?.classList.contains("textLayer");

@@ -6,6 +6,7 @@ import { TextItem } from "pdfjs-dist/types/src/display/api";
 import { generateHash } from "../utils/generate-hash";
 import { LayoutContext } from "../contexts/layout.context";
 import { FileContext } from "../contexts/file.context";
+import { findTextLayer } from "../utils/find-text-layer";
 
 export function PdfViewerMenu() {
   const { pdfProperties, hasSelection } = useContext(PdfContext);
@@ -39,10 +40,17 @@ export function PdfViewerMenu() {
   async function bookmarkText() {
     const selection = window.getSelection()!;
     const selectedText = selection.toString();
+
     const startNode = selection.anchorNode!.parentElement!;
     const endNode = selection.focusNode!.parentElement!;
+
+    const textLayer = findTextLayer(startNode);
     const pageIndex =
-      +(startNode.parentElement?.parentElement?.dataset["pageNumber"] ?? 1) - 1;
+      +(
+        textLayer.dataset["pageNumber"] ??
+        textLayer.parentElement?.dataset?.["pageNumber"] ?? // if PDF has marked content, pageNumber is on parentElement
+        1
+      ) - 1;
 
     // Avoid duplicates
     const bookmarkExists = bookmarks.some(
