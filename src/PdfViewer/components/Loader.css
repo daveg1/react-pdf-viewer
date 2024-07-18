@@ -1,5 +1,5 @@
 .loader {
-	@apply w-12 h-12 border-4 border-black border-b-transparent rounded-full inline-block box-border;
+	@apply w-12 h-12 border-4 border-zinc-800 border-b-transparent rounded-full inline-block box-border;
 	animation: rotation 1s linear infinite;
 }
 

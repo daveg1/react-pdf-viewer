@@ -158,7 +158,7 @@ export function PdfToolbar() {
     const keyUpListener = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") pageBackward();
       if (e.key === "ArrowRight") pageForward();
-      if (e.key === "[") toggleSidebar();
+      if (e.key === "[" && e.ctrlKey) toggleSidebar();
       if (e.key === "b" && e.ctrlKey) {
         e.preventDefault();
         bookmarkSelection();
@@ -181,7 +181,7 @@ export function PdfToolbar() {
   ]);
 
   return (
-    <div className="sticky inset-x-0 top-0 z-50 flex h-10 items-center bg-zinc-700 px-2 text-white shadow-lg">
+    <div className="sticky inset-x-0 top-0 z-50 flex h-10 items-center bg-gradient-to-b from-zinc-600 to-zinc-700 px-2 text-white shadow-lg">
       {/* Left section */}
       <div className="flex items-center gap-2">
         <button
