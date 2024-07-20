@@ -58,11 +58,11 @@ function Layout(props: PdfViewerProps) {
    * Event Listeners
    */
 
-  async function onLoaded(doc: PDFDocumentProxy) {
+  async function onDocumentLoaded(doc: PDFDocumentProxy) {
     setIsLoaded(true);
 
     const state = getInitialPdfState(doc);
-    virtualList.scrollOffset = state.scrollOffset;
+    virtualList.scrollToOffset(state.scrollOffset);
   }
 
   // TODO: investigate bug with clicking TOC
@@ -139,7 +139,7 @@ function Layout(props: PdfViewerProps) {
         file={file}
         options={options}
         className="flex justify-center bg-gray-400"
-        onLoadSuccess={onLoaded}
+        onLoadSuccess={onDocumentLoaded}
         onItemClick={onItemClick}
         loading={<PdfLoadingState />}
         noData={<PdfEmptyState />}

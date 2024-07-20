@@ -7,9 +7,10 @@ import { generateHash } from "../utils/generate-hash";
 import { LayoutContext } from "../contexts/layout.context";
 import { FileContext } from "../contexts/file.context";
 import { SCROLL_PADDING } from "../constants/pdf.constants";
+import { isEditableContainer } from "../utils/is-editable-container";
 
 export function PdfToolbar() {
-  const { pdfProperties, updateProperties, hasSelection } =
+  const { pdfProperties, updateProperties, hasSelection, isLoaded } =
     useContext(PdfContext);
   const { virtualList, scrollToPage, scrollPercent } =
     useContext(ScrollContext);
@@ -18,6 +19,7 @@ export function PdfToolbar() {
     useContext(BookmarkContext);
   const { setFile } = useContext(FileContext);
 
+  // const zoomSelectRef = useRef<HTMLSelectElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const MIN_PAGE = 1;
@@ -92,9 +94,9 @@ export function PdfToolbar() {
     const SCROLL_PADDING = 32;
     const virtualOffset =
       virtualList.getOffsetForIndex(pageIndex, "start")?.[0] ?? 0;
-    const scrollPercent =
+    const scrollOffsetNormalised =
       (+startNode.offsetTop + virtualOffset - SCROLL_PADDING) /
-      virtualList.getTotalSize();
+      pdfProperties.scale;
 
     // selected text layer items
     const textItems = getTextItemsInRange(range, pageIndex);
@@ -111,7 +113,7 @@ export function PdfToolbar() {
     addBookmark({
       key: crypto.randomUUID(),
       selectedText,
-      scrollPercent,
+      scrollOffsetNormalised,
       pageIndex,
       transformHashes,
     });
@@ -123,6 +125,7 @@ export function PdfToolbar() {
     addBookmark,
     getTextItemsInRange,
     setIsSidebarOpen,
+    pdfProperties.scale,
     virtualList,
   ]);
 
@@ -167,13 +170,33 @@ export function PdfToolbar() {
     scrollPercent.current =
       virtualList.scrollOffset! / virtualList.getTotalSize();
     updateProperties({ scale: 1 });
-  }, [virtualList, updateProperties, scrollPercent]);
+    // zoomSelectRef.current!.value = "1";
+  }, [scrollPercent, updateProperties, virtualList]);
+
+  const updateZoom = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    console.log(e.target.value);
+
+    updateProperties({ scale: +e.target.value });
+    // zoomSelectRef.current!.value = "custom";
+  };
 
   /**
    * Keyboard shortcuts effect
    */
   useEffect(() => {
     const keyDownListener = (e: KeyboardEvent) => {
+      // Always make this available
+      if (e.key === "o" && e.ctrlKey) {
+        e.preventDefault();
+        openFile();
+      }
+
+      // Always override
+      if (e.key === "-" && e.ctrlKey) e.preventDefault();
+      if (e.key === "=" && e.ctrlKey) e.preventDefault();
+
+      if (!isLoaded || isEditableContainer(e.target)) return;
+
       if (e.key === "ArrowUp") {
         e.preventDefault();
         nudgeOffset(-1);
@@ -182,16 +205,12 @@ export function PdfToolbar() {
         e.preventDefault();
         nudgeOffset(1);
       }
-      if (e.key === "o" && e.ctrlKey) {
-        e.preventDefault();
-        openFile();
-      }
-      if (e.key === "-" && e.ctrlKey) e.preventDefault();
-      if (e.key === "=" && e.ctrlKey) e.preventDefault();
       if (e.key === "0" && e.ctrlKey) resetZoom();
     };
 
     const keyUpListener = (e: KeyboardEvent) => {
+      if (!isLoaded || isEditableContainer(e.target)) return;
+
       if (e.key === "ArrowLeft") pageBackward();
       if (e.key === "ArrowRight") pageForward();
       if (e.key === "[" && e.ctrlKey) toggleSidebar();
@@ -211,6 +230,7 @@ export function PdfToolbar() {
       document.removeEventListener("keyup", keyUpListener);
     };
   }, [
+    isLoaded,
     bookmarkSelection,
     nudgeOffset,
     pageBackward,
@@ -226,8 +246,9 @@ export function PdfToolbar() {
       {/* Left section */}
       <div className="flex items-center gap-2">
         <button
-          className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25"
+          className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25 disabled:pointer-events-none disabled:bg-transparent disabled:opacity-50"
           onClick={toggleSidebar}
+          disabled={!isLoaded}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -284,7 +305,7 @@ export function PdfToolbar() {
 
         <button
           className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded p-1 hover:bg-white/10 active:bg-white/25 disabled:pointer-events-none disabled:bg-transparent disabled:opacity-50"
-          disabled={!hasSelection}
+          disabled={!isLoaded || !hasSelection}
           onClick={bookmarkSelection}
         >
           <svg
@@ -308,75 +329,154 @@ export function PdfToolbar() {
           </span>
         </button>
 
-        <span
-          className="cursor-pointer select-none rounded px-2 py-1 leading-tight hover:bg-white/10 active:bg-white/25"
-          onClick={resetZoom}
-        >
-          zoom: {Math.round(pdfProperties.scale * 100)}%
-        </span>
+        <div className="flex gap-1">
+          <button
+            className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded p-1 hover:bg-white/10 active:bg-white/25 disabled:pointer-events-none disabled:bg-transparent disabled:opacity-50"
+            disabled={!isLoaded}
+            onClick={zoomOut}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="size-6"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+            </svg>
+
+            <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+              Zoom out
+              <span className="opacity-60">Ctrl+-</span>
+            </span>
+          </button>
+
+          <button
+            className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded p-1 hover:bg-white/10 active:bg-white/25 disabled:pointer-events-none disabled:bg-transparent disabled:opacity-50"
+            disabled={!isLoaded}
+            onClick={zoomIn}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="size-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+
+            <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+              Zoom in
+              <span className="opacity-60">Ctrl++</span>
+            </span>
+          </button>
+
+          <select
+            className="w-24 select-none rounded-sm bg-white/10 px-1 focus:bg-white/25 active:bg-white/25 disabled:pointer-events-none disabled:bg-transparent disabled:opacity-50"
+            disabled={!isLoaded}
+            // ref={zoomSelectRef} // TODO: make showing custom value work
+            onChange={updateZoom}
+            defaultValue={"1"}
+          >
+            <option className="bg-zinc-600" value="0.5">
+              50%
+            </option>
+            <option className="bg-zinc-600" value="0.75">
+              75%
+            </option>
+            <option className="bg-zinc-600" value="1">
+              100%
+            </option>
+            <option className="bg-zinc-600" value="1.25">
+              125%
+            </option>
+            <option className="bg-zinc-600" value="1.5">
+              150%
+            </option>
+            <option className="bg-zinc-600" value="2">
+              200%
+            </option>
+            <option className="bg-zinc-600" value="3">
+              300%
+            </option>
+
+            <option value="custom" hidden>
+              {Math.round(pdfProperties.scale * 100)}%
+            </option>
+          </select>
+        </div>
       </div>
 
       {/* Middle section */}
-      <div className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center gap-2">
-        <button
-          className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25"
-          onClick={pageBackward}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            className="size-4"
+      {isLoaded && (
+        <div className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center gap-2">
+          <button
+            className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25"
+            onClick={pageBackward}
           >
-            <path
-              fillRule="evenodd"
-              d="M14 8a.75.75 0 0 1-.75.75H4.56l3.22 3.22a.75.75 0 1 1-1.06 1.06l-4.5-4.5a.75.75 0 0 1 0-1.06l4.5-4.5a.75.75 0 0 1 1.06 1.06L4.56 7.25h8.69A.75.75 0 0 1 14 8Z"
-              clipRule="evenodd"
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              className="size-4"
+            >
+              <path
+                fillRule="evenodd"
+                d="M14 8a.75.75 0 0 1-.75.75H4.56l3.22 3.22a.75.75 0 1 1-1.06 1.06l-4.5-4.5a.75.75 0 0 1 0-1.06l4.5-4.5a.75.75 0 0 1 1.06 1.06L4.56 7.25h8.69A.75.75 0 0 1 14 8Z"
+                clipRule="evenodd"
+              />
+            </svg>
+
+            <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+              Prev page
+              <span className="opacity-60">Left arrow</span>
+            </span>
+          </button>
+
+          <span className="flex items-baseline gap-1">
+            Page
+            <input
+              type="text"
+              className="w-[5ch] rounded border border-zinc-500 bg-transparent px-1 text-end outline-none focus:bg-black/25"
+              value={pdfProperties.pageNumber}
+              min={1}
+              max={pdfProperties.numPages}
+              onChange={setPage}
             />
-          </svg>
-
-          <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
-            Prev page
-            <span className="opacity-60">Left arrow</span>
+            of {pdfProperties.numPages}
           </span>
-        </button>
 
-        <span className="flex items-baseline gap-1">
-          Page
-          <input
-            type="text"
-            className="w-[5ch] rounded border border-zinc-500 bg-transparent px-1 text-end outline-none focus:bg-black/25"
-            value={pdfProperties.pageNumber}
-            min={1}
-            max={pdfProperties.numPages}
-            onChange={setPage}
-          />
-          of {pdfProperties.numPages}
-        </span>
-
-        <button
-          className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25"
-          onClick={pageForward}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            className="size-4"
+          <button
+            className="group relative flex h-7 w-7 items-center justify-center gap-1 rounded hover:bg-white/10 active:bg-white/25"
+            onClick={pageForward}
           >
-            <path
-              fillRule="evenodd"
-              d="M2 8a.75.75 0 0 1 .75-.75h8.69L8.22 4.03a.75.75 0 0 1 1.06-1.06l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 0 1-1.06-1.06l3.22-3.22H2.75A.75.75 0 0 1 2 8Z"
-              clipRule="evenodd"
-            />
-          </svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              className="size-4"
+            >
+              <path
+                fillRule="evenodd"
+                d="M2 8a.75.75 0 0 1 .75-.75h8.69L8.22 4.03a.75.75 0 0 1 1.06-1.06l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 0 1-1.06-1.06l3.22-3.22H2.75A.75.75 0 0 1 2 8Z"
+                clipRule="evenodd"
+              />
+            </svg>
 
-          <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
-            Next page
-            <span className="opacity-60">Right arrow</span>
-          </span>
-        </button>
-      </div>
+            <span className="pointer-events-none absolute -bottom-10 left-0 flex w-max items-center gap-2 rounded bg-zinc-800 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+              Next page
+              <span className="opacity-60">Right arrow</span>
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

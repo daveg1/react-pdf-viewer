@@ -26,8 +26,15 @@ export interface Bookmark {
    * The percentage scroll offset of the start of the selection text.
    *
    * A percentage value is more resilient to scale changes, as opposed to the exact scrollOffset value
+   *
+   * TODO: while true, it's harder to work with. Just store scale to allow value to be normalised
    */
-  scrollPercent: number;
+  // scrollPercent: number;
+
+  /**
+   * Scroll position for this bookmark normalised to a PDF scale of 1.
+   */
+  scrollOffsetNormalised: number;
 
   /**
    * The page on which the starting container of the selection appears

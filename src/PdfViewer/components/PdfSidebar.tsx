@@ -3,11 +3,13 @@ import { useContext } from "react";
 import { Bookmark, BookmarkContext } from "../contexts/bookmark.context";
 import { ScrollContext } from "../contexts/scroll.context";
 import { LayoutContext } from "../contexts/layout.context";
+import { PdfContext } from "../contexts/pdf.context";
 
 export function PdfSidebar() {
+  const { pdfProperties } = useContext(PdfContext);
   const { isSidebarOpen } = useContext(LayoutContext);
   const { bookmarks, removeBookmark } = useContext(BookmarkContext);
-  const { virtualList, scrollToPage } = useContext(ScrollContext);
+  const { scrollToPage } = useContext(ScrollContext);
 
   /**
    * Make it easier to see which bookmark we're hovering over
@@ -110,7 +112,7 @@ export function PdfSidebar() {
                     onClick={() =>
                       scrollToPage({
                         offset:
-                          bookmark.scrollPercent * virtualList.getTotalSize(),
+                          bookmark.scrollOffsetNormalised * pdfProperties.scale,
                       })
                     }
                   >
